@@ -25,20 +25,25 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 #include "math_base.h"
-#include "mp2.h"
-
-#define TILEWIDTH 32
 
 class Heroes;
+
+namespace MP2
+{
+    enum MapObjectType : uint16_t;
+}
 
 using MapsIndexes = std::vector<int32_t>;
 
 namespace Maps
 {
-    enum mapsize_t : int
+    struct ObjectPart;
+
+    enum MapSize : int
     {
         ZERO = 0,
         SMALL = 36,
@@ -88,6 +93,9 @@ namespace Maps
 
     // This function always ignores heroes.
     Indexes GetObjectPositions( const MP2::MapObjectType objectType );
+
+    // This is a very slow function by performance. Use it only while loading a map.
+    std::vector<std::pair<int32_t, const ObjectPart *>> getObjectParts( const MP2::MapObjectType objectType );
 
     Indexes GetObjectPositions( int32_t center, const MP2::MapObjectType objectType, bool ignoreHeroes );
 

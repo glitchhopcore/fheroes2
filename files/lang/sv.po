@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fheroes2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-07-23 04:38+0000\n"
-"PO-Revision-Date: 2024-07-05 09:59+0200\n"
+"POT-Creation-Date: 2024-12-21 09:39+0000\n"
+"PO-Revision-Date: 2024-12-21 18:15+0100\n"
 "Last-Translator: fheroes2 team <fhomm2@gmail.com>\n"
 "Language-Team: Swedish <sv@li.org>\n"
 "Language: sv\n"
@@ -273,10 +273,7 @@ msgstr ""
 "R\n"
 "U\n"
 "L\n"
-"L\n"
-"E\n"
-"R\n"
-"A"
+"L"
 
 msgid ""
 "C\n"
@@ -320,6 +317,9 @@ msgstr "RYKTEN"
 
 msgid "EVENTS"
 msgstr "HÄNDELSER"
+
+msgid "LANGUAGE"
+msgstr "SPRÅK"
 
 msgid "Warrior"
 msgstr "Krigare"
@@ -489,6 +489,9 @@ msgid ""
 msgstr ""
 "Negationsklotsartefakten är i effekt för denna striden och inaktiverar alla "
 "stridsbesvärjelser."
+
+msgid "You cannot cast spells without a commanding hero."
+msgstr "Du kan inte kasta besvärjelser utan en hjälte."
 
 msgid "You have already cast a spell this round."
 msgstr "Du har redan kastat en besvärjelse denna runda."
@@ -1053,7 +1056,7 @@ msgid "%{race1} %{name1} vs %{race2} %{name2}"
 msgstr "%{race1} %{name1} mot %{race2} %{name2}"
 
 msgid "Monsters"
-msgstr "Monster"
+msgstr "Varelser"
 
 msgid "N/A"
 msgstr "Ingen"
@@ -2997,17 +3000,14 @@ msgstr "Totalt: "
 msgid "Need: "
 msgstr "Behöver: "
 
-msgid "Load Game"
-msgstr "Ladda Spel"
-
-msgid "No save files to load."
-msgstr "Inga sparfiler att ladda."
-
 msgid "New Game"
 msgstr "Nytt Spel"
 
 msgid "Start a single or multi-player game."
 msgstr "Starta ett spel med en eller flera spelare."
+
+msgid "Load Game"
+msgstr "Ladda Spel"
 
 msgid "Load a previously saved game."
 msgstr "Ladda ett tidigare sparat spel."
@@ -3109,7 +3109,7 @@ msgid "You cannot select %{resource}!"
 msgstr "Du kan inte välja %{resource}!"
 
 msgid "Select count %{resource}:"
-msgstr "Välj antalet %{resource}:"
+msgstr "Välj antal %{resource}:"
 
 msgid "Select Recipients"
 msgstr "Välj mottagare"
@@ -3220,6 +3220,9 @@ msgstr "Välj skrollhastigheten."
 msgid "Select Game Language:"
 msgstr "Välj spelspråk:"
 
+msgid "Select Language:"
+msgstr "Välj språk:"
+
 msgid "Click to choose the selected language."
 msgstr "Klicka för att anta valt språk."
 
@@ -3251,6 +3254,9 @@ msgstr ""
 "%{skill1}\n"
 "eller\n"
 "%{skill2}"
+
+msgid "n/a"
+msgstr "Inga"
 
 msgid ""
 "Please inspect our fine wares. If you feel like offering a trade, click on "
@@ -3286,9 +3292,6 @@ msgstr "Dina resurser"
 
 msgid "Available Trades"
 msgstr "Tillgänglig handel"
-
-msgid "n/a"
-msgstr "Inga"
 
 msgid "guarded by %{count} %{monster}"
 msgstr "vaktas av %{count} %{monster}"
@@ -3387,13 +3390,32 @@ msgid "Number to buy:"
 msgstr "Antal att köpa:"
 
 msgid "Recruit selected monsters."
-msgstr "Rekrytera valda monster."
+msgstr "Rekrytera valda varelser."
 
 msgid "Select maximum monsters to be recruited."
-msgstr "Välj maximalt antal monster att rekrytera."
+msgstr "Välj maximalt antal varelser att rekrytera."
 
 msgid "Select only 1 monster to be recruited."
-msgstr "Välj endast 1 monster att rekrytera."
+msgstr "Välj endast 1 varelse att rekrytera."
+
+msgid "Select this game resolution."
+msgstr "Välj denna spelupplösningen."
+
+msgid ""
+"Selecting this resolution will set a resolution that is scaled from the "
+"original resolution (%{resolution}) by multiplying it with the number in the "
+"brackets (%{scale}).\n"
+"\n"
+"A resolution with a clean integer number (2.0x, 3.0x etc.) will usually look "
+"better because the pixels are upscaled evenly in both horizontal and "
+"vertical directions."
+msgstr ""
+"Denna upplösningen kommer att skala upplösningen från den ursprungliga "
+"upplösningen (%{resolution}) genom att multiplicera den med talet inom "
+"parentesen (%{scale}).\n"
+"\n"
+"En upplösning med heltal (2.0x, 3.0x etc.) kommer vanligtvis se bättre ut "
+"för att pixlarna skalas upp lika i både horisontal och vertikal riktning."
 
 msgid "Select Game Resolution:"
 msgstr "Ange Spelupplösning:"
@@ -3446,8 +3468,8 @@ msgstr ""
 msgid "Are you sure you want to delete file:"
 msgstr "Är du säker på att du vill radera filen:"
 
-msgid "Warning!"
-msgstr "Varning!"
+msgid "Warning"
+msgstr "Varning"
 
 msgid "Click to save the current game."
 msgstr "Klicka för att spara nuvarande spel."
@@ -3477,7 +3499,7 @@ msgid "Select Artifact:"
 msgstr "Välj Artefakt:"
 
 msgid "Select Monster:"
-msgstr "Välj Monster:"
+msgstr "Välj Varelse:"
 
 msgid "Select Hero:"
 msgstr "Välj Hjälte:"
@@ -3542,10 +3564,10 @@ msgid ""
 msgstr "Resurstyp:"
 
 msgid "%{mineName} appearance:"
-msgstr "%{mineName} utseende:"
+msgstr "Utseende %{mineName}:"
 
 msgid "Click to select %{object} as the resource generator to be placed."
-msgstr "Klicka här för att välja %{object} som objekt att placera."
+msgstr "Klicka här för att välja %{object} som resursalstrare för placering."
 
 msgid "Select Mountain Object:"
 msgstr "Välj Bergsföremål:"
@@ -3562,6 +3584,39 @@ msgstr "Välj Kraftökningsföremål:"
 msgid "Select Adventure Object:"
 msgstr "Välj Äventyrsföremål:"
 
+msgid "Players Icon"
+msgstr "Spelarikon"
+
+msgid ""
+"Indicates how many players total are in the scenario. Any positions not "
+"occupied by human players will be occupied by computer players."
+msgstr ""
+"Anger hur många spelare totalt det är i kartan. Platser som inte upptas av "
+"en människa kommer spelas av datorkontrollerade spelare."
+
+msgid ""
+"Indicates whether the map\n"
+"is small (36 x 36), medium\n"
+"(72 x 72), large (108 x 108),\n"
+"or extra large (144 x 144)."
+msgstr ""
+"Anger om kartan är liten (36 x 36),\n"
+"medel (72 x 72), stor (108 x 108)\n"
+"eller extrastor (144 x 144)."
+
+msgid "Size Icon"
+msgstr "Ikonstorlek"
+
+msgid "Map Type"
+msgstr "Karttyp"
+
+msgid ""
+"Indicates whether the map is made for \"The Succession Wars\", \"The Price "
+"of Loyalty\" or \"Resurrection\" version of the game."
+msgstr ""
+"Visar om kartan är gjord för \"The Succession Wars-\", \"The Price of "
+"Loyalty-\" eller \"Resurrection\"-versionen av spelet."
+
 msgid "Map Type:\n"
 msgstr "Karttyp:\n"
 
@@ -3573,6 +3628,15 @@ msgstr "Lojalitetens Pris"
 
 msgid "Resurrection"
 msgstr "Resurrection"
+
+msgid ""
+"\n"
+"\n"
+"Language:\n"
+msgstr ""
+"\n"
+"\n"
+"Språk:\n"
 
 msgid "Lose all your heroes and towns."
 msgstr "Förlora alla dina hjältar och städer."
@@ -3648,39 +3712,6 @@ msgstr "Alla Kartor"
 
 msgid "View all maps, regardless of size."
 msgstr "Visa alla kartor, oavsett storlek."
-
-msgid "Players Icon"
-msgstr "Spelarikon"
-
-msgid ""
-"Indicates how many players total are in the scenario. Any positions not "
-"occupied by human players will be occupied by computer players."
-msgstr ""
-"Anger hur många spelare totalt det är i kartan. Platser som inte upptas av "
-"en människa kommer spelas av datorkontrollerade spelare."
-
-msgid ""
-"Indicates whether the map\n"
-"is small (36 x 36), medium\n"
-"(72 x 72), large (108 x 108),\n"
-"or extra large (144 x 144)."
-msgstr ""
-"Anger om kartan är liten (36 x 36),\n"
-"medel (72 x 72), stor (108 x 108)\n"
-"eller extrastor (144 x 144)."
-
-msgid "Size Icon"
-msgstr "Ikonstorlek"
-
-msgid "Map Type"
-msgstr "Karttyp"
-
-msgid ""
-"Indicates whether the map is made for \"The Succession Wars\", \"The Price "
-"of Loyalty\" or \"Resurrection\" version of the game."
-msgstr ""
-"Visar om kartan är gjord för \"The Succession Wars-\", \"The Price of "
-"Loyalty-\" eller \"Resurrection\"-versionen av spelet."
 
 msgid "Selected Name"
 msgstr "Valt Namn"
@@ -4008,7 +4039,7 @@ msgid "Objects cannot be placed outside the map."
 msgstr "Föremål kan inte placeras utanför kartan."
 
 msgid "Action objects must be placed on clear tiles."
-msgstr "Händelseobjekt måste placeras på fria rutor."
+msgstr "Händelseföremål måste placeras på fria rutor."
 
 msgid ""
 "Do you wish to return to the game's Main Menu? All unsaved changes will be "
@@ -4058,6 +4089,9 @@ msgstr "Lämna kartredigeraren."
 msgid "Input %{object} text"
 msgstr "Skriv in %{object} text"
 
+msgid "Set %{resource-type} Count"
+msgstr "Ange %{resource-type} antal"
+
 msgid "Set Random Ultimate Artifact Radius"
 msgstr "Ange slumpad radie för Främsta artefakt"
 
@@ -4095,9 +4129,8 @@ msgstr "Kunde inte hitta sökvägen för att spara kartan."
 msgid "Unable to create a directory to save the map."
 msgstr "Kunde inte skapa en sökväg för att spara kartan."
 
-#, fuzzy
 msgid "Unable to locate a directory to save the map."
-msgstr "Kunde inte hitta sökvägen för att spara kartan."
+msgstr "Kunde inte hitta en sökväg för att spara kartan."
 
 msgid "Are you sure you want to overwrite the existing map?"
 msgstr "Är du säker på att du vill skriva över existerande karta?"
@@ -4112,7 +4145,7 @@ msgid "Used to place %{object}."
 msgstr "Används för att placera %{object}."
 
 msgid "Select object type"
-msgstr "Välj objekttyp"
+msgstr "Välj föremålstyp"
 
 msgid ""
 "Click here to\n"
@@ -4126,15 +4159,12 @@ msgid ""
 "select another monster."
 msgstr ""
 "Klicka här för att\n"
-" \n"
 "välja en annan varelse."
 
 msgid ""
 "Cell\n"
 "Details"
-msgstr ""
-"Cell-\n"
-"detaljer"
+msgstr "Rutdetaljer"
 
 msgid "Erase"
 msgstr "Radera"
@@ -4176,16 +4206,16 @@ msgid "Towns"
 msgstr "Städer"
 
 msgid "editorErasure|Landscape objects"
-msgstr "Landskapsobjekt"
+msgstr "Landskapsföremål"
 
 msgid "editorErasure|Adventure non pickable objects"
-msgstr "Ej tagbara äventyrsobjekt"
+msgstr "Ej tagbara äventyrsföremål"
 
 msgid "editorErasure|Castles"
 msgstr "Slott"
 
 msgid "editorErasure|Adventure pickable objects"
-msgstr "Tagbara äventyrsobjekt"
+msgstr "Tagbara äventyrsföremål"
 
 msgid "editorErasure|Monsters"
 msgstr "Varelser"
@@ -4248,25 +4278,25 @@ msgid "No special modifiers."
 msgstr "Ger inget förflyttningsstraff."
 
 msgid "Toggle the erasure of %{type} objects."
-msgstr "Aktivera raderingen av %{type}objekt."
+msgstr "Aktivera raderingen av %{type}."
 
 msgid ""
 "Objects of this type will be deleted with the Erase tool. Left-click here to "
 "deselect this type. Press and hold this button to deselect all other object "
 "types."
 msgstr ""
-"Objekt av denna typ kommer raderas med Raderingsverktyget. Vänsterklicka här "
-"för att avmarkera denna objekttyp. Tryck och håll denna knapp för att "
-"avmarkera alla andra objekttyper."
+"Föremål av denna typ kommer raderas med Raderingsverktyget. Vänsterklicka "
+"här för att avmarkera denna föremålstyp. Tryck och håll denna knapp för att "
+"avmarkera alla andra föremålstyper."
 
 msgid ""
 "Objects of this type will NOT be deleted with the Erase tool. Left-click "
 "here to select this type. Press and hold this button to select all other "
 "object types."
 msgstr ""
-"Objekt av denna typ kommer INTE att raderas med Raderingsverktyget. "
-"Vänsterklicka här för att markera denna objekttyp. Tryck och håll denna "
-"knapp för att markera alla andra objektyper."
+"Föremål av denna typ kommer INTE att raderas med Raderingsverktyget. "
+"Vänsterklicka här för att markera denna föremålstyp. Tryck och håll denna "
+"knapp för att markera alla andra föremålsyper."
 
 msgid "Terrain Mode"
 msgstr "Terrängläge"
@@ -4275,7 +4305,7 @@ msgid "Used to draw the underlying grass, dirt, water, etc. on the map."
 msgstr "Används för att rita terrängen så som gräs, jord, hav osv på kartan."
 
 msgid "Landscape Objects Mode"
-msgstr "Landskapsobjektsläge"
+msgstr "Landskapsföremålsläge"
 
 msgid ""
 "Used to place landscape objects (mountains, rocks, trees, etc.) on the map."
@@ -4289,7 +4319,7 @@ msgid "Used for special editing of action objects."
 msgstr "Används för särskild redigering av händelseföremål."
 
 msgid "Adventure Objects Mode"
-msgstr "Äventyrsobjektsläge"
+msgstr "Äventyrsföremålsläge"
 
 msgid ""
 "Used to place adventure objects (artifacts, dwellings, mines, treasures, "
@@ -4330,7 +4360,7 @@ msgid "Used to erase objects from the map."
 msgstr "Används för att radera föremål från kartan."
 
 msgid "Change between zoom and normal view."
-msgstr "Ändra mellan inzoomad vy eller normal vy."
+msgstr "Ändra mellan förstorad vy eller normal vy."
 
 msgid "Magnify"
 msgstr "Förstora"
@@ -4388,32 +4418,23 @@ msgstr "Avbryt och gå tillbaka till kartredigerarens huvudmeny."
 msgid "No maps available!"
 msgstr "Inga kartor tillgängliga!"
 
-msgid "Warning"
-msgstr "Varning"
-
-#, fuzzy
 msgid "[%{pos}]: %{race} hero"
-msgstr "%{color} %{race}"
+msgstr "[%{pos}]: %{race}hjälte"
 
-#, fuzzy
 msgid "[%{pos}]: %{name}, %{race} hero"
-msgstr "%{race1} %{name1} mot %{race2} %{name2}"
+msgstr "[%{pos}]: %{name}, %{race}hjälte"
 
-#, fuzzy
 msgid "[%{pos}]: %{race} town"
-msgstr "%{color} %{race}"
+msgstr "[%{pos}]: %{race}stad"
 
-#, fuzzy
 msgid "[%{pos}]: %{race} castle"
-msgstr "%{color} %{race} %{townOrCastle}"
+msgstr "[%{pos}]: %{race}slott"
 
-#, fuzzy
 msgid "[%{pos}]: %{name}, %{race} town"
-msgstr "%{race1} %{name1} mot %{race2} %{name2}"
+msgstr "[%{pos}]: %{name}, %{race}stad"
 
-#, fuzzy
 msgid "[%{pos}]: %{name}, %{race} castle"
-msgstr "%{race1} %{name1} mot %{race2} %{name2}"
+msgstr "[%{pos}]: %{name}, %{race}slott"
 
 msgid "None."
 msgstr "Inga."
@@ -4427,6 +4448,21 @@ msgstr "Samla ihop guld."
 msgid "Run out of time."
 msgstr "Få slut på tid."
 
+msgid "alliance|1st"
+msgstr "1:a"
+
+msgid "alliance|2nd"
+msgstr "2:a"
+
+msgid "alliance|3rd"
+msgstr "3:e"
+
+msgid "alliance|4th"
+msgstr "4:e"
+
+msgid "alliance|5th"
+msgstr "5:e"
+
 msgid "Special Loss Condition"
 msgstr "Särskilt Förlustvillkor"
 
@@ -4437,42 +4473,53 @@ msgid "Allow standard victory conditions"
 msgstr "Tillåt standardsegervillkor"
 
 msgid "Allow this condition also for AI"
-msgstr ""
+msgstr "Tillåt detta villkor även för Datorn"
+
+msgid "Set alliances:"
+msgstr "Ange allianser:"
+
+msgid "{%number} alliance: "
+msgstr "{%number} allians: "
 
 msgid "Gold:"
 msgstr "Guld:"
 
-#, fuzzy
 msgid "Select a Town to capture to achieve victory"
-msgstr "Välj stad att teleportera till."
+msgstr "Välj en Stad att inta för att uppnå seger"
 
-#, fuzzy
 msgid "Click here to change the town needed to capture to achieve victory."
-msgstr "Klicka för att ändra händelsemeddelandet."
+msgstr "Klicka för att ändra Staden som måste intas för att uppnå seger."
 
 msgid "Select a Hero to defeat to achieve victory"
-msgstr ""
+msgstr "Välj en Hjälte att besegra för att uppnå seger"
 
-#, fuzzy
 msgid "Click here to change the hero needed to defeat to achieve victory."
-msgstr "Klicka för att ändra händelsemeddelandet."
+msgstr "Klicka för att ändra Hjälten som måste besegras för att uppnå seger."
+
+msgid "Put %{color} player in the %{alliance} alliance"
+msgstr "Lägg till %{color} spelare i %{alliance} allians."
+
+msgid ""
+"If this checkbox is checked, the %{color} player will be in the %{alliance} "
+"alliance."
+msgstr ""
+"Om denna ruta är ifylld så kommer %{color} spelare vara med i %{alliance} "
+"allians."
 
 msgid "Days:"
 msgstr "Dagar:"
 
 msgid "Select a Town to lose to suffer defeat"
-msgstr ""
+msgstr "Välj en Stad att besegras för att förlora"
 
-#, fuzzy
 msgid "Click here to change the town whose loss would mean defeat."
-msgstr "Klicka för att ändra händelsemeddelandet."
+msgstr "Klicka för att ändra Staden vars besegring innebär förlust."
 
 msgid "Select a Hero to lose to suffer defeat"
-msgstr ""
+msgstr "Välj en Hjälte att besegras för att förlora"
 
-#, fuzzy
 msgid "Click here to change the hero whose loss would mean defeat."
-msgstr "Klicka för att ändra händelsemeddelandet."
+msgstr "Klicka för att ändra Hjälten vars besegring innebär förlust."
 
 msgid "Map Difficulty"
 msgstr "Kartsvårighet"
@@ -4480,18 +4527,27 @@ msgstr "Kartsvårighet"
 msgid "Map Description"
 msgstr "Kartbeskrivning"
 
-msgid "Change Map Name"
-msgstr "Ändra Kartnamn"
-
-msgid "Change Map Description"
-msgstr "Ändra Kartbeskrivning"
-
 msgid ""
 "The entered map description exceeds the maximum allowed 5 rows. It will be "
 "shortened to fit the map description field."
 msgstr ""
 "Kartans beskrivning överstiger högsta tillåtna 5 rader. Beskrivningen kommer "
 "att nedkortas för att få plats i beskrivningsfältet."
+
+msgid ""
+"You are about to change the map's language from %{oldLanguage} to "
+"%{newLanguage}. Some texts might not be displayed properly after this. Do "
+"you want to proceed?"
+msgstr ""
+"Du tänker ändra kartans språk från %{oldLanguage} till %{newLanguage}. En "
+"del texter kan eventuellt inte visas korrekt efter detta. Vill du "
+"fortfarande ändra språk?"
+
+msgid "Change Map Name"
+msgstr "Ändra Kartnamn"
+
+msgid "Change Map Description"
+msgstr "Ändra Kartbeskrivning"
 
 msgid "Click to accept the changes made."
 msgstr "Klicka för att acceptera ändringarna."
@@ -4507,6 +4563,9 @@ msgstr "Klicka för att redigera dagliga händelser."
 
 msgid "Events"
 msgstr "Händelser"
+
+msgid "Click to change the language of the map."
+msgstr "Klicka för att ändra kartans språk."
 
 msgid "Click to change your map name."
 msgstr "Klicka för att ändra kartans namn."
@@ -4542,13 +4601,15 @@ msgid "Animation"
 msgstr "Animering"
 
 msgid "Passability"
-msgstr "Framkomlighet"
+msgstr ""
+"Framkomlig-\n"
+"het"
 
 msgid "Toggle animation of the objects."
-msgstr "Aktivera animationen för objekten."
+msgstr "Aktivera animationen för föremålen."
 
 msgid "Toggle display of objects' passability."
-msgstr "Visa objektens framkomlighet."
+msgstr "Visa föremålens framkomlighet."
 
 msgid "Rumor:"
 msgstr "Rykte:"
@@ -5330,6 +5391,9 @@ msgstr "Denna spelomgång är översatt till '"
 msgid "' language, but the current language of the game is '"
 msgstr "' men nuvarande spelspråk är "
 
+msgid "No save files to load."
+msgstr "Inga sparfiler att ladda."
+
 msgid "Hot Seat"
 msgstr "Heta stolen"
 
@@ -5365,50 +5429,36 @@ msgstr ""
 msgid "fheroes2 Resurrection Team presents"
 msgstr "fheroes2 Resurrection Team presenterar"
 
-msgid "Greetings!"
-msgstr "Var Hälsad!"
-
 msgid "Welcome to Heroes of Might and Magic II powered by fheroes2 engine!"
 msgstr "Välkommen till Heroes of Might and Magic II genom fheroes2 spelmotor!"
 
 msgid ""
-"Welcome to Heroes of Might and Magic II powered by the fheroes2 engine!\n"
+"\n"
+"\n"
+"To simulate a right-click with a touch to get info on various items, you "
+"need to first touch and keep touching on the item of interest and then touch "
+"anywhere else on the screen. While holding the second finger, you can remove "
+"the first one from the screen and keep viewing the information on the item."
+msgstr ""
+"\n"
+"\n"
+"För att simulera högerklick med en pekskärm för att få information om olika "
+"objekt så måste du först peka och hålla inne fingret på objektet för att "
+"sedan peka någon annanstans på pekskärmen. Medan du håller ditt andra finger "
+"på pekskärmen så kan du släppa ditt första finger från skärmen för att "
+"fortsätta se informationen om objektet."
+
+msgid ""
+"\n"
+"\n"
 "Before starting the game, please select a game resolution."
 msgstr ""
-"Välkommen till Heroes of Might and Magic II genom fheroes2 spelmotor. \n"
+"\n"
+"\n"
 "Välj spelupplösning innan du börjar spelet."
 
-msgid "Please Remember"
-msgstr "Kom ihåg"
-
-msgid ""
-"You can always change the language, resolution and settings of the game by "
-"clicking on the "
-msgstr ""
-"Du kan alltid ändra språk, spelupplösning och inställningar genom att klicka "
-"på "
-
-msgid "door"
-msgstr "dörren"
-
-msgid " on the left side of the Main Menu, or with the "
-msgstr " vid vänster om huvudmenyn eller med "
-
-msgid " button from the "
-msgstr " knappen i "
-
-msgid "NEW GAME"
-msgstr ""
-"NYTT\n"
-"SPEL"
-
-msgid ""
-" menu. \n"
-"\n"
-"Enjoy the game!"
-msgstr ""
-" menyn. \n"
-"Spela på!"
+msgid "Greetings!"
+msgstr "Var Hälsad!"
 
 msgid "Quit Heroes of Might and Magic II and return to the operating system."
 msgstr "Avsluta Heroes of Might and Magic II och återgå till operativsystemet."
@@ -5782,7 +5832,7 @@ msgid "%{monster} growth +%{count}."
 msgstr "Populationen av %{monster} ökar med +%{count}."
 
 msgid " All populations are halved."
-msgstr " All populationer är halverade."
+msgstr " Alla populationer är halverade."
 
 msgid " All dwellings increase population."
 msgstr " Alla boningar ökar sin population."
@@ -5900,7 +5950,7 @@ msgid ""
 "occupied by the Hero. Press and hold this button to reset the Hero's path."
 msgstr ""
 "Påbörja Hjältens förflyttning längs den givna vägsträckan eller återbesök "
-"ett objekt som Hjälten står vid. Tryck och håll denna knapp för att "
+"ett föremål som Hjälten står vid. Tryck och håll denna knapp för att "
 "återställa Hjältens vägsträckning."
 
 msgid "Kingdom Summary"
@@ -6116,6 +6166,16 @@ msgstr "MELLANSLAG"
 
 msgid "Keyboard|ABC"
 msgstr "ABC"
+
+msgid "The entered value is invalid."
+msgstr "Värdet är ogiltigt."
+
+msgid ""
+"The entered value is out of range.\n"
+"It should be not less than %{minValue} and not more than %{maxValue}."
+msgstr ""
+"Det inmatade värdet är ogiltigt.\n"
+"Värdet får vara inte mindre än %{minValue} och inte mer än %{maxValue}."
 
 msgid "Kingdom Income"
 msgstr "Inkomst"
@@ -6389,7 +6449,7 @@ msgstr ""
 
 msgid "Insulted by your refusal of their offer, the monsters attack!"
 msgstr ""
-"Förolämpade av ditt avvisande av deras erbjudande, attackerar monsterna!"
+"Förolämpade av ditt avvisande av deras erbjudande, attackerar varelserna!"
 
 msgid ""
 "The %{monster}, awed by the power of your forces, begin to scatter.\n"
@@ -7527,10 +7587,10 @@ msgid "He checks your pack, and sees that you have 1 cursed item."
 msgid_plural ""
 "He checks your pack, and sees that you have %{count} cursed items."
 msgstr[0] ""
-"Han kontrollerar din packning, och upptäcker att du har 1 förbannat objekt."
+"Han kontrollerar din packning, och upptäcker att du har 1 förbannat föremål."
 msgstr[1] ""
 "Han kontrollerar din packning, och upptäcker att du har %{count} förbannade "
-"objekt."
+"föremål."
 
 msgid "For %{gold} gold, the alchemist will remove it for you. Do you pay?"
 msgid_plural ""
@@ -7677,15 +7737,20 @@ msgstr ""
 msgid ""
 "The Sphinx asks you the following riddle:\n"
 "\n"
-"'%{riddle}'\n"
+"'"
+msgstr ""
+"Sfinxen ställer dig följande gåta:\n"
+"\n"
+"'"
+
+msgid ""
+"sphinx|'\n"
 "\n"
 "Your answer?"
 msgstr ""
-"Sfinxen frågar dig följande gåta:\n"
+"'\n"
 "\n"
-"'%{riddle}'\n"
-"\n"
-"Vad är ditt svar?"
+"Ditt svar?"
 
 msgid ""
 "\"You guessed incorrectly,\" the Sphinx says, smiling. The Sphinx swipes at "
@@ -7829,7 +7894,7 @@ msgid ""
 "You must be within %{count} spaces of a monster for the Visions spell to "
 "work."
 msgstr ""
-"Hjälten måste befinna sig inom %{count} rutor från ett monster för att "
+"Hjälten måste befinna sig inom %{count} rutor från en varelse för att "
 "Synerbesvärjelsen ska ge effekt."
 
 msgid ""
@@ -8253,7 +8318,7 @@ msgid ""
 "by %{count} percent, and eliminates the %{penalty} percent penalty when "
 "shooting past obstacles (e.g. castle walls)."
 msgstr ""
-"%{name} ökar skadan från hjältens skjutande varelser med %{count} procent "
+"%{skill} ökar skadan från hjältens skjutande varelser med %{count} procent "
 "och tar bort %{penalty} procent av straffet när projektiler passerar hinder, "
 "exempelvis slottsmurar."
 
@@ -8285,7 +8350,7 @@ msgid ""
 "The cost of surrender is reduced to %{percent} percent of the total cost of "
 "troops in the army."
 msgstr ""
-"%{name} sänker kostnaden för kapitulation med %{count} procent av "
+"%{percent} sänker kostnaden för kapitulation med %{count} procent av "
 "totalkostnaden för trupperna i hjältens armé."
 
 msgid ""
@@ -8625,6 +8690,12 @@ msgstr "Blixtsnabb"
 msgid "speed|Instant"
 msgstr "Ögonblicklig"
 
+msgid "Click this button to adjust the level of zoom."
+msgstr "Klicka här för att justera förstoringen."
+
+msgid "Zoom"
+msgstr "Förstoring"
+
 msgid "week|Squirrel"
 msgstr "Ekorrens"
 
@@ -8776,7 +8847,7 @@ msgid "This space for rent."
 msgstr "Uthyres"
 
 msgid "No object"
-msgstr "Inget Objekt"
+msgstr "Inget föremål"
 
 msgid "Alchemist Lab"
 msgstr "Alkemistlabb"
@@ -8908,7 +8979,7 @@ msgid "Random Resource"
 msgstr "Slumpad Resurs"
 
 msgid "Random Monster"
-msgstr "Slumpat Monster"
+msgstr "Slumpad Varelse"
 
 msgid "Random Town"
 msgstr "Slumpad Stad"
@@ -8920,16 +8991,16 @@ msgid "Eye of the Magi"
 msgstr "De vise männens öga"
 
 msgid "Random Monster - weak"
-msgstr "Slumpat Monster - svag"
+msgstr "Slumpad Varelse - svag"
 
 msgid "Random Monster - medium"
-msgstr "Slumpat Monster - medel"
+msgstr "Slumpad Varelse - medel"
 
 msgid "Random Monster - strong"
-msgstr "Slumpat Monster - starkt"
+msgstr "Slumpad Varelse - starkt"
 
 msgid "Random Monster - very strong"
-msgstr "Slumpat Monster - väldigt starkt"
+msgstr "Slumpad Varelse - väldigt starkt"
 
 msgid "Hero"
 msgstr "Hjälte"
@@ -9150,10 +9221,10 @@ msgid "randomRace|level 6 creatures"
 msgstr "nivå 6 varelser"
 
 msgid "Unknown Monsters"
-msgstr "Okända Monster"
+msgstr "Okända Varelser"
 
 msgid "Unknown Monster"
-msgstr "Okänt Monster"
+msgstr "Okänd Varelse"
 
 msgid "Peasant"
 msgstr "Bonde"
@@ -9549,31 +9620,31 @@ msgid "Water Elementals"
 msgstr "Vattenväsen"
 
 msgid "Random Monsters"
-msgstr "Slumpade Monster"
+msgstr "Slumpade Varelser"
 
 msgid "Random Monster 1"
-msgstr "Slumpat Monster 1"
+msgstr "Slumpad Varelse 1"
 
 msgid "Random Monsters 1"
-msgstr "Slumpade Monster 1"
+msgstr "Slumpade Varelser 1"
 
 msgid "Random Monster 2"
-msgstr "Slumpat Monster 2"
+msgstr "Slumpad Varelse 2"
 
 msgid "Random Monsters 2"
-msgstr "Slumpade Monster 2"
+msgstr "Slumpade Varelser 2"
 
 msgid "Random Monster 3"
-msgstr "Slumpat Monster 3"
+msgstr "Slumpad Varelse 3"
 
 msgid "Random Monsters 3"
-msgstr "Slumpade Monster 3"
+msgstr "Slumpade Varelser 3"
 
 msgid "Random Monster 4"
-msgstr "Slumpat Monster 4"
+msgstr "Slumpad Varelse 4"
 
 msgid "Random Monsters 4"
-msgstr "Slumpade Monster 4"
+msgstr "Slumpade Varelser 4"
 
 msgid "Double shot"
 msgstr "Dubbel avfyrning"
@@ -9610,6 +9681,9 @@ msgstr "% resistens mot %{spell}besvärjelse"
 
 msgid "% damage from Elemental spells"
 msgstr "% skada från Elementbesvärjelser"
+
+msgid "% damage from %{spell} spell"
+msgstr "% skada från %{spell}besvärjelse"
 
 msgid "% chance to Dispel beneficial spells"
 msgstr "% chans att Skingra godartade besvärjelser"
@@ -9677,20 +9751,41 @@ msgstr "Elementande"
 msgid "No Morale"
 msgstr "Ingen Stridsmoral"
 
-msgid "200% damage from Fire spells"
-msgstr "200% skada från Eldbesvärjelser"
+msgid "Earth creature"
+msgstr "Jordvarelse"
 
-msgid "200% damage from Cold spells"
-msgstr "200% skada från Köldbesvärjelser"
+msgid "Air creature"
+msgstr "Luftvarelse"
 
-msgid "% damage from %{spell} spell"
-msgstr "% skada från %{spell}besvärjelse"
+msgid "Fire creature"
+msgstr "Eldvarelse"
 
-msgid "% immunity to "
-msgstr "% resistens mot "
+msgid "Water creature"
+msgstr "Vattenvarelse"
+
+msgid "Double damage from Fire spells"
+msgstr "Dubbel skada från Eldbesvärjelser"
+
+msgid "Double damage from Cold spells"
+msgstr "Dubbel skada från Köldbesvärjelser"
+
+msgid "Double damage from Earth creatures"
+msgstr "Dubbel skada från Jordvarelser"
+
+msgid "Double damage from Air creatures"
+msgstr "Dubbel skada från Luftvarelser"
+
+msgid "Double damage from Fire creatures"
+msgstr "Dubbel skada från Eldvaralser"
+
+msgid "Double damage from Water creatures"
+msgstr "Dubbel skada från Vattenvarelser"
 
 msgid "Lightning"
 msgstr "Blixt"
+
+msgid "% immunity to "
+msgstr "% resistens mot "
 
 msgid "% damage from "
 msgstr "% skada från "
@@ -11339,14 +11434,14 @@ msgstr "Ökar vald varelses Försvar genom förtrollning."
 msgid "Stoneskin"
 msgstr "Stenhud"
 
+msgid "Steelskin"
+msgstr "Stålhud"
+
 msgid ""
 "Increases the defense skill of the targeted creatures. This is an improved "
 "version of Stoneskin."
 msgstr ""
 "Ökar Försvaret för vald varelse. Detta är en förbättrad variant av Stenhud."
-
-msgid "Steelskin"
-msgstr "Stålhud"
 
 msgid "Causes the selected creatures to inflict minimum damage."
 msgstr "Får en varelse att utdela minimal skada."
@@ -11379,9 +11474,8 @@ msgstr "Heligt Rop"
 msgid "Anti-Magic"
 msgstr "Antimagi"
 
-#, fuzzy
 msgid "Prevents any magic against the selected creatures."
-msgstr "Förhindrar onda besvärjelser mot vald varelse."
+msgstr "Förhindrar besvärjelser mot vald varelse."
 
 msgid "Dispel Magic"
 msgstr "Skingra Magi"
@@ -11855,6 +11949,41 @@ msgstr ""
 "Den senaste versionen av spelet finns på:\n"
 "https://github.com/ihhub/\n"
 "fheroes2/releases"
+
+#~ msgid "Please Remember"
+#~ msgstr "Kom ihåg"
+
+#~ msgid ""
+#~ "You can always change the language, resolution and settings of the game "
+#~ "by clicking on the "
+#~ msgstr ""
+#~ "Du kan alltid ändra språk, spelupplösning och inställningar genom att "
+#~ "klicka på "
+
+#~ msgid "door"
+#~ msgstr "dörren"
+
+#~ msgid " on the left side of the Main Menu, or with the "
+#~ msgstr " vid vänster om huvudmenyn eller med "
+
+#~ msgid " button from the "
+#~ msgstr " knappen i "
+
+#~ msgid "NEW GAME"
+#~ msgstr ""
+#~ "NYTT\n"
+#~ "SPEL"
+
+#~ msgid ""
+#~ " menu. \n"
+#~ "\n"
+#~ "Enjoy the game!"
+#~ msgstr ""
+#~ " menyn. \n"
+#~ "Spela på!"
+
+#~ msgid "Warning!"
+#~ msgstr "Varning!"
 
 #~ msgid "Dummy 1"
 #~ msgstr "Atrapp 1"

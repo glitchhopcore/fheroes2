@@ -28,6 +28,7 @@
 #include <initializer_list>
 #include <list>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <utility>
@@ -48,7 +49,7 @@
 #include "game_delays.h"
 #include "game_interface.h"
 #include "game_static.h"
-#include "heroes.h"
+#include "heroes.h" // IWYU pragma: associated
 #include "icn.h"
 #include "image.h"
 #include "interface_base.h"
@@ -62,10 +63,12 @@
 #include "m82.h"
 #include "map_object_info.h"
 #include "maps.h"
+#include "maps_fileinfo.h"
 #include "maps_objects.h"
 #include "maps_tiles.h"
 #include "maps_tiles_helper.h"
 #include "math_base.h"
+#include "math_tools.h"
 #include "monster.h"
 #include "mp2.h"
 #include "mus.h"
@@ -218,18 +221,29 @@ namespace
         I.setRedraw( Interface::REDRAW_RADAR );
     }
 
-    void runActionObjectFadeOutAnumation( const Maps::Tiles & tile, const MP2::MapObjectType objectType )
+    void runActionObjectFadeOutAnimation( const Maps::Tile & tile, const MP2::MapObjectType objectType )
     {
         uint32_t objectUID = 0;
 
-        if ( Maps::getObjectTypeByIcn( tile.getObjectIcnType(), tile.GetObjectSpriteIndex() ) == objectType ) {
-            objectUID = tile.GetObjectUID();
+        // There are original hacked maps (or made with exploitation of the original Editor's bugs) that have wrong object type in relation to its image sprite.
+        // So, we also search for object ID by checking if the object is an action type because one tile can have only one action object.
+        MP2::MapObjectType actualObjectType = MP2::OBJ_NONE;
+        const bool isActionObject = MP2::isInGameActionObject( objectType );
+
+        if ( const MP2::MapObjectType mainObjectType = Maps::getObjectTypeByIcn( tile.getMainObjectPart().icnType, tile.getMainObjectPart().icnIndex );
+             mainObjectType == objectType || ( isActionObject && MP2::isInGameActionObject( mainObjectType ) ) ) {
+            objectUID = tile.getMainObjectPart()._uid;
+
+            actualObjectType = mainObjectType;
         }
         else {
-            // In maps made by the original map editor the action object can be in the bottom layer addons.
-            for ( auto iter = tile.getBottomLayerAddons().rbegin(); iter != tile.getBottomLayerAddons().rend(); ++iter ) {
-                if ( Maps::getObjectTypeByIcn( iter->_objectIcnType, iter->_imageIndex ) == objectType ) {
+            // In maps made by the original map editor the action object can be in the ground layer.
+            for ( auto iter = tile.getGroundObjectParts().rbegin(); iter != tile.getGroundObjectParts().rend(); ++iter ) {
+                if ( const MP2::MapObjectType partObjectType = Maps::getObjectTypeByIcn( iter->icnType, iter->icnIndex );
+                     partObjectType == objectType || ( isActionObject && MP2::isInGameActionObject( partObjectType ) ) ) {
                     objectUID = iter->_uid;
+
+                    actualObjectType = partObjectType;
                     break;
                 }
             }
@@ -240,12 +254,18 @@ namespace
         Interface::AdventureMap & I = Interface::AdventureMap::Get();
         I.getGameArea().runSingleObjectAnimation( std::make_shared<Interface::ObjectFadingOutInfo>( objectUID, tile.GetIndex(), objectType ) );
 
+        // If there is a map bug the Object Animation destructor is not able to properly remove this object from the map.
+        if ( actualObjectType != objectType && actualObjectType != MP2::OBJ_NONE ) {
+            // Remove an object by its actual sprite type.
+            removeObjectFromTileByType( tile, actualObjectType );
+        }
+
         // Update radar in the place of the removed object.
         I.getRadar().SetRenderArea( { Maps::GetPoint( tile.GetIndex() ), { 1, 1 } } );
         I.setRedraw( Interface::REDRAW_RADAR );
     }
 
-    void RecruitMonsterFromTile( Heroes & hero, Maps::Tiles & tile, std::string msg, const Troop & troop, const bool remove )
+    void RecruitMonsterFromTile( Heroes & hero, Maps::Tile & tile, std::string msg, const Troop & troop, const bool remove )
     {
         if ( !hero.GetArmy().CanJoinTroop( troop ) )
             fheroes2::showStandardTextMessage( std::move( msg ), _( "You are unable to recruit at this time, your ranks are full." ), Dialog::OK );
@@ -256,7 +276,7 @@ namespace
                 if ( remove && recruit == troop.GetCount() ) {
                     Game::PlayPickupSound();
 
-                    runActionObjectFadeOutAnumation( tile, tile.GetObject() );
+                    runActionObjectFadeOutAnimation( tile, tile.getMainObjectType() );
 
                     resetObjectMetadata( tile );
                 }
@@ -314,7 +334,7 @@ namespace
 
     void ActionToMonster( Heroes & hero, int32_t dst_index )
     {
-        Maps::Tiles & tile = world.GetTiles( dst_index );
+        Maps::Tile & tile = world.getTile( dst_index );
         const Troop troop = getTroopFromTile( tile );
 
         Interface::AdventureMap & I = Interface::AdventureMap::Get();
@@ -406,6 +426,9 @@ namespace
 
             const Battle::Result res = Battle::Loader( hero.GetArmy(), army, dst_index );
 
+            // Hero' spell points and army could have changed. Update heroes icons and status area.
+            I.renderWithFadeInOrPlanRender( Interface::REDRAW_HEROES | Interface::REDRAW_BUTTONS | Interface::REDRAW_STATUS );
+
             if ( res.AttackerWins() ) {
                 hero.IncreaseExperience( res.GetExperienceAttacker() );
 
@@ -445,9 +468,9 @@ namespace
         if ( destroy ) {
             AudioManager::PlaySound( M82::KILLFADE );
 
-            assert( tile.GetObject() == MP2::OBJ_MONSTER );
+            assert( tile.getMainObjectType() == MP2::OBJ_MONSTER );
 
-            runActionObjectFadeOutAnumation( tile, MP2::OBJ_MONSTER );
+            runActionObjectFadeOutAnimation( tile, MP2::OBJ_MONSTER );
 
             resetObjectMetadata( tile );
         }
@@ -524,6 +547,9 @@ namespace
 
             castle->ActionAfterBattle( res.AttackerWins() );
 
+            // Hero' spell points and army could have changed. Update heroes icons and status area.
+            Interface::AdventureMap::Get().renderWithFadeInOrPlanRender( Interface::REDRAW_HEROES | Interface::REDRAW_BUTTONS | Interface::REDRAW_STATUS );
+
             // The defender was defeated
             if ( !res.DefenderWins() && defender ) {
                 BattleLose( *defender, res, false );
@@ -561,7 +587,7 @@ namespace
 
     void ActionToHeroes( Heroes & hero, const int32_t dstIndex )
     {
-        Heroes * otherHero = world.GetTiles( dstIndex ).getHero();
+        Heroes * otherHero = world.getTile( dstIndex ).getHero();
         if ( otherHero == nullptr ) {
             // This should never happen
             assert( 0 );
@@ -596,6 +622,9 @@ namespace
 
         const Battle::Result res = Battle::Loader( hero.GetArmy(), otherHero->GetArmy(), dstIndex );
 
+        // Hero' spell points and army could have changed. Update heroes icons and status area.
+        Interface::AdventureMap::Get().renderWithFadeInOrPlanRender( Interface::REDRAW_HEROES | Interface::REDRAW_BUTTONS | Interface::REDRAW_STATUS );
+
         // TODO: make fading animation of both heroes together.
 
         // The defender was defeated
@@ -618,7 +647,7 @@ namespace
         }
     }
 
-    void ActionToBoat( Heroes & hero, int32_t dst_index )
+    void ActionToBoat( Heroes & hero, const int32_t dst_index )
     {
         DEBUG_LOG( DBG_GAME, DBG_INFO, hero.GetName() )
 
@@ -626,12 +655,13 @@ namespace
             return;
         }
 
-        hero.setLastGroundRegion( world.GetTiles( hero.GetIndex() ).GetRegion() );
+        hero.setLastGroundRegion( world.getTile( hero.GetIndex() ).GetRegion() );
 
         const fheroes2::Point offset( Maps::GetPoint( dst_index ) - hero.GetCenter() );
 
         // Get the direction of the boat so that the direction of the hero can be set to it after boarding
-        const int boatDirection = world.GetTiles( dst_index ).getBoatDirection();
+        Maps::Tile & destinationTile = world.getTile( dst_index );
+        const int boatDirection = destinationTile.getBoatDirection();
 
         AudioManager::PlaySound( M82::KILLFADE );
         hero.ShowPath( false );
@@ -649,14 +679,23 @@ namespace
 
         // Set the direction of the hero to the one of the boat as the boat does not move when boarding it
         hero.setDirection( boatDirection );
-        hero.setObjectTypeUnderHero( MP2::OBJ_NONE );
-        world.GetTiles( dst_index ).resetObjectSprite();
+
+        // Remove boat object information from the tile.
+        destinationTile.resetMainObjectPart();
+        // Update tile's object type if any object exists after removing the boat.
+        destinationTile.updateObjectType();
+        // Set the newly updated object type to hero to remember it.
+        // It is needed in case of moving out from this tile and restoring the tile's original object type.
+        hero.setObjectTypeUnderHero( destinationTile.getMainObjectType( true ) );
+        // Set the tile's object type as Hero.
+        destinationTile.setMainObjectType( MP2::OBJ_HERO );
+
         hero.SetShipMaster( true );
 
         hero.ShowPath( true );
 
         // Boat is no longer empty so we reset color to default
-        world.GetTiles( dst_index ).resetBoatOwnerColor();
+        destinationTile.resetBoatOwnerColor();
     }
 
     void ActionToCoast( Heroes & hero, int32_t dst_index )
@@ -668,7 +707,7 @@ namespace
         }
 
         const int fromIndex = hero.GetIndex();
-        Maps::Tiles & from = world.GetTiles( fromIndex );
+        Maps::Tile & from = world.getTile( fromIndex );
 
         // Calculate the offset before making the action.
         const fheroes2::Point offset( Maps::GetPoint( dst_index ) - hero.GetCenter() );
@@ -699,9 +738,7 @@ namespace
     {
         DEBUG_LOG( DBG_GAME, DBG_INFO, hero.GetName() << ", object: " << MP2::StringObject( objectType ) )
 
-        Maps::Tiles & tile = world.GetTiles( dst_index );
-
-        Interface::AdventureMap & I = Interface::AdventureMap::Get();
+        Maps::Tile & tile = world.getTile( dst_index );
 
         if ( objectType == MP2::OBJ_BOTTLE ) {
             const MapSign * sign = dynamic_cast<MapSign *>( world.GetMapObject( dst_index ) );
@@ -719,7 +756,8 @@ namespace
             else {
                 const auto resource = funds.getFirstValidResource();
 
-                I.getStatusWindow().SetResource( resource.first, resource.second );
+                Interface::AdventureMap & I = Interface::AdventureMap::Get();
+                I.getStatusPanel().SetResource( resource.first, resource.second );
                 I.setRedraw( Interface::REDRAW_STATUS );
             }
 
@@ -728,7 +766,7 @@ namespace
 
         Game::PlayPickupSound();
 
-        runActionObjectFadeOutAnumation( tile, objectType );
+        runActionObjectFadeOutAnimation( tile, objectType );
 
         resetObjectMetadata( tile );
     }
@@ -737,7 +775,7 @@ namespace
     {
         DEBUG_LOG( DBG_GAME, DBG_INFO, hero.GetName() << ", object: " << MP2::StringObject( objectType ) )
 
-        Maps::Tiles & tile = world.GetTiles( dst_index );
+        Maps::Tile & tile = world.getTile( dst_index );
         const Funds funds = getFundsFromTile( tile );
 
         std::string msg;
@@ -808,7 +846,7 @@ namespace
     {
         DEBUG_LOG( DBG_GAME, DBG_INFO, hero.GetName() )
 
-        Maps::Tiles & tile = world.GetTiles( dst_index );
+        Maps::Tile & tile = world.getTile( dst_index );
         std::string message( _( "You come upon the remains of an unfortunate adventurer." ) );
         std::string title( MP2::StringObject( objectType ) );
 
@@ -853,7 +891,7 @@ namespace
     {
         DEBUG_LOG( DBG_GAME, DBG_INFO, hero.GetName() )
 
-        Maps::Tiles & tile = world.GetTiles( dst_index );
+        Maps::Tile & tile = world.getTile( dst_index );
         std::string message( _( "You come across an old wagon left by a trader who didn't quite make it to safe terrain." ) );
         std::string title( MP2::StringObject( MP2::OBJ_WAGON ) );
 
@@ -906,7 +944,7 @@ namespace
     {
         DEBUG_LOG( DBG_GAME, DBG_INFO, hero.GetName() )
 
-        Maps::Tiles & tile = world.GetTiles( dst_index );
+        Maps::Tile & tile = world.getTile( dst_index );
         std::string msg;
         std::string title( MP2::StringObject( objectType ) );
 
@@ -928,7 +966,7 @@ namespace
 
         Game::PlayPickupSound();
 
-        runActionObjectFadeOutAnumation( tile, objectType );
+        runActionObjectFadeOutAnimation( tile, objectType );
 
         resetObjectMetadata( tile );
     }
@@ -937,7 +975,7 @@ namespace
     {
         DEBUG_LOG( DBG_GAME, DBG_INFO, hero.GetName() )
 
-        const Spell & spell = getSpellFromTile( world.GetTiles( dst_index ) );
+        const Spell & spell = getSpellFromTile( world.getTile( dst_index ) );
         assert( spell.isValid() );
 
         const int spellLevel = spell.Level();
@@ -1000,7 +1038,7 @@ namespace
     {
         DEBUG_LOG( DBG_GAME, DBG_INFO, hero.GetName() )
 
-        const Skill::Secondary & skill = getSecondarySkillFromWitchsHut( world.GetTiles( dst_index ) );
+        const Skill::Secondary & skill = getSecondarySkillFromWitchsHut( world.getTile( dst_index ) );
         if ( skill.isValid() ) {
             std::string msg = _( "You approach the hut and observe a witch inside studying an ancient tome on %{skill}.\n\n" );
             const std::string & skill_name = Skill::Secondary::String( skill.Skill() );
@@ -1101,7 +1139,7 @@ namespace
     {
         DEBUG_LOG( DBG_GAME, DBG_INFO, hero.GetName() )
 
-        Maps::Tiles & tile = world.GetTiles( dst_index );
+        Maps::Tile & tile = world.getTile( dst_index );
         const Spell & spell = getSpellFromTile( tile );
 
         std::string ask = _(
@@ -1123,6 +1161,10 @@ namespace
                 Army army( tile );
 
                 const Battle::Result res = Battle::Loader( hero.GetArmy(), army, dst_index );
+
+                // Hero' spell points and army could have changed. Update heroes icons and status area.
+                Interface::AdventureMap::Get().renderWithFadeInOrPlanRender( Interface::REDRAW_HEROES | Interface::REDRAW_BUTTONS | Interface::REDRAW_STATUS );
+
                 if ( res.AttackerWins() ) {
                     hero.IncreaseExperience( res.GetExperienceAttacker() );
                     bool valid = false;
@@ -1230,7 +1272,7 @@ namespace
     {
         DEBUG_LOG( DBG_GAME, DBG_INFO, hero.GetName() << ", object: " << MP2::StringObject( objectType ) )
 
-        const Maps::Tiles & tile = world.GetTiles( dst_index );
+        const Maps::Tile & tile = world.getTile( dst_index );
 
         std::string msg;
         int skill = Skill::Primary::ATTACK;
@@ -1294,7 +1336,7 @@ namespace
     {
         DEBUG_LOG( DBG_GAME, DBG_INFO, hero.GetName() << ", object: " << MP2::StringObject( objectType ) )
 
-        Maps::Tiles & tile = world.GetTiles( dst_index );
+        Maps::Tile & tile = world.getTile( dst_index );
         const Funds funds = getFundsFromTile( tile );
         assert( funds.GetValidItemsCount() == 0 || ( funds.GetValidItemsCount() == 1 && funds.gold > 0 ) );
 
@@ -1338,6 +1380,10 @@ namespace
             Army army( tile );
 
             const Battle::Result res = Battle::Loader( hero.GetArmy(), army, dst_index );
+
+            // Hero' spell points could have changed. Update heroes icons.
+            Interface::AdventureMap::Get().renderWithFadeInOrPlanRender( Interface::REDRAW_HEROES | Interface::REDRAW_BUTTONS );
+
             if ( res.AttackerWins() ) {
                 hero.IncreaseExperience( res.GetExperienceAttacker() );
 
@@ -1460,7 +1506,7 @@ namespace
     {
         DEBUG_LOG( DBG_GAME, DBG_INFO, hero.GetName() << ", object: " << MP2::StringObject( objectType ) )
 
-        const Maps::Tiles & tile = world.GetTiles( dst_index );
+        const Maps::Tile & tile = world.getTile( dst_index );
 
         const bool visited = hero.isVisited( tile );
         std::string msg;
@@ -1509,7 +1555,7 @@ namespace
     {
         DEBUG_LOG( DBG_GAME, DBG_INFO, hero.GetName() )
 
-        Maps::Tiles & tile = world.GetTiles( dst_index );
+        Maps::Tile & tile = world.getTile( dst_index );
 
         std::string title( MP2::StringObject( objectType ) );
 
@@ -1541,7 +1587,7 @@ namespace
 
         Game::PlayPickupSound();
 
-        runActionObjectFadeOutAnumation( tile, objectType );
+        runActionObjectFadeOutAnimation( tile, objectType );
 
         resetObjectMetadata( tile );
     }
@@ -1550,7 +1596,7 @@ namespace
     {
         DEBUG_LOG( DBG_GAME, DBG_INFO, hero.GetName() )
 
-        Maps::Tiles & tile = world.GetTiles( dst_index );
+        Maps::Tile & tile = world.getTile( dst_index );
         std::string title( MP2::StringObject( MP2::OBJ_ARTIFACT ) );
 
         const Artifact art = getArtifactFromTile( tile );
@@ -1678,6 +1724,10 @@ namespace
 
             if ( battle ) {
                 const Battle::Result res = Battle::Loader( hero.GetArmy(), army, dst_index );
+
+                // Hero' spell points and army could have changed. Update heroes icons and status area.
+                Interface::AdventureMap::Get().renderWithFadeInOrPlanRender( Interface::REDRAW_HEROES | Interface::REDRAW_BUTTONS | Interface::REDRAW_STATUS );
+
                 if ( res.AttackerWins() ) {
                     hero.IncreaseExperience( res.GetExperienceAttacker() );
                     result = true;
@@ -1718,9 +1768,9 @@ namespace
         if ( result && hero.PickupArtifact( art ) ) {
             Game::PlayPickupSound();
 
-            assert( tile.GetObject() == MP2::OBJ_ARTIFACT );
+            assert( tile.getMainObjectType() == MP2::OBJ_ARTIFACT );
 
-            runActionObjectFadeOutAnumation( tile, MP2::OBJ_ARTIFACT );
+            runActionObjectFadeOutAnimation( tile, MP2::OBJ_ARTIFACT );
 
             resetObjectMetadata( tile );
         }
@@ -1730,7 +1780,7 @@ namespace
     {
         DEBUG_LOG( DBG_GAME, DBG_INFO, hero.GetName() )
 
-        Maps::Tiles & tile = world.GetTiles( dst_index );
+        Maps::Tile & tile = world.getTile( dst_index );
         std::string hdr = MP2::StringObject( objectType );
 
         std::string msg;
@@ -1824,7 +1874,7 @@ namespace
 
         Game::PlayPickupSound();
 
-        runActionObjectFadeOutAnumation( tile, objectType );
+        runActionObjectFadeOutAnimation( tile, objectType );
 
         resetObjectMetadata( tile );
     }
@@ -1833,7 +1883,7 @@ namespace
     {
         DEBUG_LOG( DBG_GAME, DBG_INFO, hero.GetName() )
 
-        Maps::Tiles & tile = world.GetTiles( dst_index );
+        Maps::Tile & tile = world.getTile( dst_index );
         const Troop & troop = getTroopFromTile( tile );
         if ( !troop.isValid() ) {
             return;
@@ -1869,7 +1919,7 @@ namespace
             return;
         }
 
-        assert( world.GetTiles( index_to ).GetObject() != MP2::OBJ_HERO );
+        assert( world.getTile( index_to ).getMainObjectType() != MP2::OBJ_HERO );
 
         AudioManager::PlaySound( M82::KILLFADE );
         hero.ShowPath( false );
@@ -1943,7 +1993,7 @@ namespace
     {
         DEBUG_LOG( DBG_GAME, DBG_INFO, hero.GetName() << " object: " << MP2::StringObject( objectType ) )
 
-        Maps::Tiles & tile = world.GetTiles( dstIndex );
+        Maps::Tile & tile = world.getTile( dstIndex );
 
         if ( !hero.isFriends( getColorFromTile( tile ) ) ) {
             const auto updateRadar = [objectType, dstIndex]() {
@@ -1982,7 +2032,7 @@ namespace
 
             const auto removeObjectProtection = [&tile]() {
                 // Clear any metadata related to spells
-                if ( tile.GetObject( false ) == MP2::OBJ_MINE ) {
+                if ( tile.getMainObjectType( false ) == MP2::OBJ_MINE ) {
                     removeMineSpellFromTile( tile );
                 }
             };
@@ -2071,6 +2121,9 @@ namespace
 
                 const Battle::Result result = Battle::Loader( hero.GetArmy(), army, dstIndex );
 
+                // Hero' spell points and army could have changed. Update heroes icons and status area.
+                Interface::AdventureMap::Get().renderWithFadeInOrPlanRender( Interface::REDRAW_HEROES | Interface::REDRAW_BUTTONS | Interface::REDRAW_STATUS );
+
                 if ( result.AttackerWins() ) {
                     hero.IncreaseExperience( result.GetExperienceAttacker() );
 
@@ -2115,11 +2168,14 @@ namespace
         }
 
         if ( enter ) {
-            Maps::Tiles & tile = world.GetTiles( dstIndex );
+            Maps::Tile & tile = world.getTile( dstIndex );
 
             Army army( tile );
 
             const Battle::Result result = Battle::Loader( hero.GetArmy(), army, dstIndex );
+
+            // Hero' spell points and army could have changed. Update heroes icons and status area.
+            Interface::AdventureMap::Get().renderWithFadeInOrPlanRender( Interface::REDRAW_HEROES | Interface::REDRAW_BUTTONS | Interface::REDRAW_STATUS );
 
             if ( result.AttackerWins() ) {
                 hero.IncreaseExperience( result.GetExperienceAttacker() );
@@ -2152,7 +2208,7 @@ namespace
     {
         DEBUG_LOG( DBG_GAME, DBG_INFO, hero.GetName() << ", object: " << MP2::StringObject( objectType ) )
 
-        Maps::Tiles & tile = world.GetTiles( dst_index );
+        Maps::Tile & tile = world.getTile( dst_index );
         const Troop & troop = getTroopFromTile( tile );
 
         std::string title( MP2::StringObject( objectType ) );
@@ -2200,7 +2256,7 @@ namespace
     {
         DEBUG_LOG( DBG_GAME, DBG_INFO, hero.GetName() << ", object: " << MP2::StringObject( objectType ) )
 
-        Maps::Tiles & tile = world.GetTiles( dst_index );
+        Maps::Tile & tile = world.getTile( dst_index );
 
         std::string msg_full;
         std::string msg_void;
@@ -2347,7 +2403,7 @@ namespace
         };
 
         const Outcome outcome = [dst_index, &title, objectIsEmptyMsg, recruitmentAvailableMsg, warningMsg]() {
-            const Maps::Tiles & tile = world.GetTiles( dst_index );
+            const Maps::Tile & tile = world.getTile( dst_index );
 
             if ( getColorFromTile( tile ) != Color::NONE ) {
                 const Troop troop = getTroopFromTile( tile );
@@ -2377,7 +2433,7 @@ namespace
             return Outcome::IgnoreFight;
         }();
 
-        Maps::Tiles & tile = world.GetTiles( dst_index );
+        Maps::Tile & tile = world.getTile( dst_index );
 
         switch ( outcome ) {
         case Outcome::Empty:
@@ -2401,6 +2457,10 @@ namespace
             Army army( tile );
 
             const Battle::Result res = Battle::Loader( hero.GetArmy(), army, dst_index );
+
+            // Hero' spell points and army could have changed. Update heroes icons and status area.
+            Interface::AdventureMap::Get().renderWithFadeInOrPlanRender( Interface::REDRAW_HEROES | Interface::REDRAW_BUTTONS | Interface::REDRAW_STATUS );
+
             if ( res.AttackerWins() ) {
                 hero.IncreaseExperience( res.GetExperienceAttacker() );
 
@@ -2489,7 +2549,7 @@ namespace
     {
         DEBUG_LOG( DBG_GAME, DBG_INFO, hero.GetName() )
 
-        const Maps::Tiles & tile = world.GetTiles( dst_index );
+        const Maps::Tile & tile = world.getTile( dst_index );
         std::string title( MP2::StringObject( objectType ) );
 
         if ( hero.isVisited( tile ) ) {
@@ -2529,19 +2589,24 @@ namespace
 
     bool ActionToUpgradeArmy( Army & army, const Monster & mons, std::string & str1, std::string & str2, const bool combineWithAnd )
     {
-        const std::string combTypeAnd = _( " and " );
-        const std::string combTypeComma = ", ";
-
         if ( army.HasMonster( mons ) ) {
+            const std::string combText = combineWithAnd ? _( " and " ) : ", ";
+
             army.UpgradeMonsters( mons );
-            if ( !str1.empty() )
-                str1 += combineWithAnd ? combTypeAnd : combTypeComma;
+
+            if ( !str1.empty() ) {
+                str1 += combText;
+            }
             str1 += mons.GetMultiName();
-            if ( !str2.empty() )
-                str2 += combineWithAnd ? combTypeAnd : combTypeComma;
+
+            if ( !str2.empty() ) {
+                str2 += combText;
+            }
             str2 += mons.GetUpgrade().GetMultiName();
+
             return true;
         }
+
         return false;
     }
 
@@ -2749,7 +2814,9 @@ namespace
                 elementUI.emplace_back( artifactUI.get() );
             }
 
-            fheroes2::showStandardTextMessage( {}, event_maps->message, Dialog::OK, elementUI );
+            const fheroes2::Text header( {}, fheroes2::FontType::normalYellow() );
+            const fheroes2::Text body( event_maps->message, fheroes2::FontType::normalWhite(), Settings::Get().getCurrentMapInfo().getSupportedLanguage() );
+            fheroes2::showMessage( header, body, Dialog::OK, elementUI );
 
             // PickupArtifact() has a built-in check for Artifact correctness, the presence of a magic book
             // and the fullness of the bag. Is also displays appropriate text when an artifact cannot be picked up.
@@ -2771,7 +2838,7 @@ namespace
         Kingdom & kingdom = hero.GetKingdom();
         std::string title( MP2::StringObject( objectType ) );
 
-        if ( !hero.isVisited( world.GetTiles( dst_index ), Visit::GLOBAL ) ) {
+        if ( !hero.isVisited( world.getTile( dst_index ), Visit::GLOBAL ) ) {
             hero.SetVisited( dst_index, Visit::GLOBAL );
             kingdom.PuzzleMaps().Update( kingdom.CountVisitedObjects( MP2::OBJ_OBELISK ), world.CountObeliskOnMaps() );
             AudioManager::PlaySound( M82::EXPERNCE );
@@ -2790,7 +2857,7 @@ namespace
     {
         DEBUG_LOG( DBG_GAME, DBG_INFO, hero.GetName() )
 
-        const Maps::Tiles & tile = world.GetTiles( dst_index );
+        const Maps::Tile & tile = world.getTile( dst_index );
         std::string title( MP2::StringObject( objectType ) );
 
         if ( hero.isVisited( tile ) ) {
@@ -2901,13 +2968,13 @@ namespace
             Death
         };
 
-        const uint32_t demonSlayingExperience = 1000;
+        // Declare this variable both constexpr and static because different compilers disagree on whether there is a need to capture it in lambda expressions or not
+        static constexpr uint32_t demonSlayingExperience = 1000;
 
-        // Implicitly capture everything by reference because different compilers disagree on whether there is a need to capture the 'demonSlayingExperience' or not
-        const Outcome outcome = [&]() {
+        const Outcome outcome = [&hero = std::as_const( hero ), dst_index, &title]() {
             const MusicalEffectPlayer musicalEffectPlayer( MUS::DEMONCAVE );
 
-            const Maps::Tiles & tile = world.GetTiles( dst_index );
+            const Maps::Tile & tile = world.getTile( dst_index );
 
             if ( fheroes2::showStandardTextMessage( title,
                                                     _( "The entrance to the cave is dark, and a foul, sulfurous smell issues from the cave mouth. Will you enter?" ),
@@ -3020,7 +3087,7 @@ namespace
             Kingdom & kingdom = hero.GetKingdom();
 
             if ( outcome != Outcome::Empty ) {
-                Maps::Tiles & tile = world.GetTiles( dst_index );
+                Maps::Tile & tile = world.getTile( dst_index );
                 assert( doesTileContainValuableItems( tile ) );
 
                 switch ( outcome ) {
@@ -3028,6 +3095,10 @@ namespace
                     Army army( tile );
 
                     const Battle::Result res = Battle::Loader( hero.GetArmy(), army, dst_index );
+
+                    // Hero' spell points and army could have changed. Update heroes icons and status area.
+                    Interface::AdventureMap::Get().renderWithFadeInOrPlanRender( Interface::REDRAW_HEROES | Interface::REDRAW_BUTTONS | Interface::REDRAW_STATUS );
+
                     if ( res.AttackerWins() ) {
                         hero.IncreaseExperience( res.GetExperienceAttacker() );
 
@@ -3246,14 +3317,14 @@ namespace
         std::string title( MP2::StringObject( objectType ) );
 
         if ( kingdom.AllowRecruitHero( false ) ) {
-            const Maps::Tiles & tile = world.GetTiles( dst_index );
+            const Maps::Tile & tile = world.getTile( dst_index );
             AudioManager::PlaySound( M82::EXPERNCE );
             fheroes2::showStandardTextMessage(
                 std::move( title ),
                 _( "In a dazzling display of daring, you break into the local jail and free the hero imprisoned there, who, in return, pledges loyalty to your cause." ),
                 Dialog::OK );
 
-            runActionObjectFadeOutAnumation( tile, objectType );
+            runActionObjectFadeOutAnimation( tile, objectType );
 
             // TODO: add hero fading in animation together with jail animation.
             Heroes * prisoner = world.FromJailHeroes( dst_index );
@@ -3262,7 +3333,7 @@ namespace
                 prisoner->Recruit( hero.GetColor(), Maps::GetPoint( dst_index ) );
 
                 // Update the kingdom heroes list including the scrollbar.
-                Interface::AdventureMap::Get().GetIconsPanel().ResetIcons( ICON_HEROES );
+                Interface::AdventureMap::Get().GetIconsPanel().resetIcons( ICON_HEROES );
             }
         }
         else {
@@ -3286,7 +3357,7 @@ namespace
         if ( !hero.isObjectTypeVisited( objectType, Visit::GLOBAL ) ) {
             hero.SetVisited( dst_index, Visit::GLOBAL );
 
-            const MapsIndexes eyeMagiIndexes = Maps::GetObjectPositions( MP2::OBJ_EYE_OF_MAGI );
+            const auto & eyeMagiIndexes = world.getAllEyeOfMagiPositions();
             if ( !eyeMagiIndexes.empty() ) {
                 Interface::AdventureMap & I = Interface::AdventureMap::Get();
 
@@ -3392,11 +3463,15 @@ namespace
                 return Outcome::Ignore;
             }
 
-            std::string question( _( "The Sphinx asks you the following riddle:\n\n'%{riddle}'\n\nYour answer?" ) );
-            StringReplace( question, "%{riddle}", riddle->riddle );
+            const auto language = Settings::Get().getCurrentMapInfo().getSupportedLanguage();
+
+            fheroes2::MultiFontText questionText;
+            questionText.add( { _( "The Sphinx asks you the following riddle:\n\n'" ), fheroes2::FontType::normalWhite() } );
+            questionText.add( { riddle->riddle, fheroes2::FontType::normalWhite(), language } );
+            questionText.add( { _( "sphinx|'\n\nYour answer?" ), fheroes2::FontType::normalWhite() } );
 
             std::string answer;
-            Dialog::inputString( question, answer, title, 0, false, false );
+            Dialog::inputString( fheroes2::Text{ title, fheroes2::FontType::normalYellow() }, questionText, answer, 0, false, {} );
 
             if ( !riddle->isCorrectAnswer( answer ) ) {
                 fheroes2::showStandardTextMessage(
@@ -3489,7 +3564,7 @@ namespace
         // A hero cannot stand on a barrier. He must stand in front of the barrier. Something wrong with logic!
         assert( hero.GetIndex() != dst_index );
 
-        const Maps::Tiles & tile = world.GetTiles( dst_index );
+        const Maps::Tile & tile = world.getTile( dst_index );
         const Kingdom & kingdom = hero.GetKingdom();
 
         std::string title = MP2::StringObject( objectType );
@@ -3504,7 +3579,7 @@ namespace
 
             AudioManager::PlaySound( M82::KILLFADE );
 
-            runActionObjectFadeOutAnumation( tile, objectType );
+            runActionObjectFadeOutAnimation( tile, objectType );
         }
         else {
             fheroes2::showStandardTextMessage(
@@ -3525,7 +3600,7 @@ namespace
             _( "You enter the tent and see an old woman gazing into a magic gem. She looks up and says,\n\"In my travels, I have learned much in the way of arcane magic. A great oracle taught me his skill. I have the answer you seek.\"" ),
             Dialog::OK );
 
-        const Maps::Tiles & tile = world.GetTiles( dst_index );
+        const Maps::Tile & tile = world.getTile( dst_index );
         Kingdom & kingdom = hero.GetKingdom();
 
         kingdom.SetVisitTravelersTent( getColorFromTile( tile ) );
@@ -3599,7 +3674,9 @@ void Heroes::Action( int tileIndex )
         // Restore the original music after the action is completed.
         const AudioManager::MusicRestorer musicRestorer;
 
-        return AI::HeroesAction( *this, tileIndex );
+        AI::HeroesAction( *this, tileIndex );
+
+        return;
     }
 
     const int32_t heroPosIndex = GetIndex();
@@ -3608,10 +3685,10 @@ void Heroes::Action( int tileIndex )
     // Update environment sounds and music before performing the action
     if ( Game::UpdateSoundsOnFocusUpdate() ) {
         Game::EnvironmentSoundMixer();
-        AudioManager::PlayMusicAsync( MUS::FromGround( world.GetTiles( heroPosIndex ).GetGround() ), Music::PlaybackMode::RESUME_AND_PLAY_INFINITE );
+        AudioManager::PlayMusicAsync( MUS::FromGround( world.getTile( heroPosIndex ).GetGround() ), Music::PlaybackMode::RESUME_AND_PLAY_INFINITE );
     }
 
-    const MP2::MapObjectType objectType = world.GetTiles( tileIndex ).GetObject( tileIndex != heroPosIndex );
+    const MP2::MapObjectType objectType = world.getTile( tileIndex ).getMainObjectType( tileIndex != heroPosIndex );
     if ( MP2::isInGameActionObject( objectType, isShipMaster() ) ) {
         SetModes( ACTION );
     }

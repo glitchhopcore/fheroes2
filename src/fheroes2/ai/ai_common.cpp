@@ -21,6 +21,7 @@
 #include "ai_common.h"
 
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -28,6 +29,7 @@
 #include <optional>
 #include <ostream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "army.h"
@@ -43,7 +45,7 @@
 #include "resource.h"
 #include "resource_trading.h"
 
-bool AI::BuildIfPossible( Castle & castle, const building_t building )
+bool AI::BuildIfPossible( Castle & castle, const BuildingType building )
 {
     switch ( castle.CheckBuyBuilding( building ) ) {
     case BuildingStatus::LACK_RESOURCES: {
@@ -67,7 +69,7 @@ bool AI::BuildIfPossible( Castle & castle, const building_t building )
     return result;
 }
 
-bool AI::BuildIfEnoughFunds( Castle & castle, const building_t building, const uint32_t fundsMultiplier )
+bool AI::BuildIfEnoughFunds( Castle & castle, const BuildingType building, const uint32_t fundsMultiplier )
 {
     if ( fundsMultiplier < 1 || fundsMultiplier > 99 ) {
         return false;
@@ -130,7 +132,7 @@ void AI::OptimizeTroopsOrder( Army & army )
     // Archers are sorted solely by strength
     std::sort( archers.begin(), archers.end(), []( const Troop & left, const Troop & right ) { return left.GetStrength() < right.GetStrength(); } );
 
-    std::vector<size_t> slotOrder = { 2, 1, 3, 0, 4 };
+    std::array<size_t, 5> slotOrder = { 2, 1, 3, 0, 4 };
     switch ( archers.size() ) {
     case 1:
         slotOrder = { 0, 2, 1, 3, 4 };
@@ -228,8 +230,7 @@ std::optional<Funds> AI::calculateMarketplaceTransaction( const Kingdom & kingdo
         const Funds fundsDiff = kingdom.GetFunds() - fundsToObtain;
 
         Resource::forEach( Resource::ALL, [&plannedBalance, &fundsDiff]( const int res ) {
-            const auto [dummy, inserted] = plannedBalance.try_emplace( res, fundsDiff.Get( res ) );
-            if ( !inserted ) {
+            if ( const auto [dummy, inserted] = plannedBalance.try_emplace( res, fundsDiff.Get( res ) ); !inserted ) {
                 assert( 0 );
             }
         } );

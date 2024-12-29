@@ -23,14 +23,11 @@
 #include <array>
 #include <cassert>
 #include <cstdint>
-#include <map>
 #include <set>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
-#include "color.h"
-#include "mp2.h"
-#include "pairs.h"
 #include "resource.h"
 #include "world_pathfinding.h"
 
@@ -42,9 +39,19 @@ class Kingdom;
 struct VecCastles;
 struct VecHeroes;
 
+namespace MP2
+{
+    enum MapObjectType : uint16_t;
+}
+
 namespace Maps
 {
-    class Tiles;
+    class Tile;
+}
+
+namespace Skill
+{
+    class Secondary;
 }
 
 namespace AI
@@ -110,27 +117,18 @@ namespace AI
         }
     };
 
-    struct HeroToMove
-    {
-        Heroes * hero = nullptr;
-        int patrolCenter = -1;
-        uint32_t patrolDistance = 0;
-    };
-
     struct EnemyArmy
     {
         EnemyArmy() = default;
 
-        EnemyArmy( const int32_t index_, const int color_, const Heroes * hero_, const double strength_, const uint32_t movePoints_ )
+        EnemyArmy( const int32_t index_, const Heroes * hero_, const double strength_, const uint32_t movePoints_ )
             : index( index_ )
-            , color( color_ )
             , hero( hero_ )
             , strength( strength_ )
             , movePoints( movePoints_ )
         {}
 
         int32_t index{ -1 };
-        int color{ Color::NONE };
         const Heroes * hero{ nullptr };
         double strength{ 0 };
         uint32_t movePoints{ 0 };
@@ -170,38 +168,49 @@ namespace AI
 
         void resetPathfinder();
 
-        void revealFog( const Maps::Tiles & tile, const Kingdom & kingdom );
+        void revealFog( const Maps::Tile & tile, const Kingdom & kingdom );
 
         bool isValidHeroObject( const Heroes & hero, const int32_t index, const bool underHero );
 
-        double getObjectValue( const Heroes & hero, const int index, const int objectType, const double valueToIgnore, const uint32_t distanceToObject ) const;
-        double getTargetArmyStrength( const Maps::Tiles & tile, const MP2::MapObjectType objectType );
+        double getObjectValue( const Heroes & hero, const int32_t index, const MP2::MapObjectType objectType, const double valueToIgnore,
+                               const uint32_t distanceToObject ) const;
+
+        // Returns the strength of the army guarding the given tile. Note that the army is obtained by calling
+        // Army::setFromTile(), so this method is not suitable for hero armies or castle garrisons.
+        double getTileArmyStrength( const Maps::Tile & tile );
 
         static void HeroesPreBattle( HeroBase & hero, bool isAttacking );
         static void CastlePreBattle( Castle & castle );
+
+        static Skill::Secondary pickSecondarySkill( const Heroes & hero, const Skill::Secondary & left, const Skill::Secondary & right );
 
     private:
         Planner() = default;
 
         void CastleTurn( Castle & castle, const bool defensiveStrategy );
 
+        // Upgrades & hires the maximum possible number of troops in the given castle, and also purposefully reinforces the castle's guest hero
+        // (if there is one) by giving him the best available troops.
+        void reinforceCastle( Castle & castle );
+
         // Returns true if heroes can still do tasks but they have no move points.
-        bool HeroesTurn( VecHeroes & heroes, const uint32_t startProgressValue, const uint32_t endProgressValue );
+        bool HeroesTurn( VecHeroes & heroes, uint32_t & currentProgressValue, uint32_t endProgressValue );
 
         bool recruitHero( Castle & castle, bool buyArmy );
-        void reinforceHeroInCastle( Heroes & hero, Castle & castle, const Funds & budget );
 
         void evaluateRegionSafety();
 
         std::vector<AICastle> getSortedCastleList( const VecCastles & castles, const std::set<int> & castlesInDanger );
 
-        int getPriorityTarget( const HeroToMove & heroInfo, double & maxPriority );
+        int getPriorityTarget( Heroes & hero, double & maxPriority );
 
-        double getGeneralObjectValue( const Heroes & hero, const int index, const double valueToIgnore, const uint32_t distanceToObject ) const;
-        double getFighterObjectValue( const Heroes & hero, const int index, const double valueToIgnore, const uint32_t distanceToObject ) const;
-        double getCourierObjectValue( const Heroes & hero, const int index, const double valueToIgnore, const uint32_t distanceToObject ) const;
-        double getScoutObjectValue( const Heroes & hero, const int index, const double valueToIgnore, const uint32_t distanceToObject ) const;
-        int getCourierMainTarget( const Heroes & hero, const AIWorldPathfinder & pathfinder, double lowestPossibleValue ) const;
+        double getGeneralObjectValue( const Heroes & hero, const int32_t index, const double valueToIgnore, const uint32_t distanceToObject ) const;
+        double getFighterObjectValue( const Heroes & hero, const int32_t index, const double valueToIgnore, const uint32_t distanceToObject ) const;
+        double getCourierObjectValue( const Heroes & hero, const int32_t index, const double valueToIgnore, const uint32_t distanceToObject ) const;
+        double getScoutObjectValue( const Heroes & hero, const int32_t index, const double valueToIgnore, const uint32_t distanceToObject ) const;
+
+        int getCourierMainTarget( const Heroes & hero, const double lowestPossibleValue );
+
         double getResourcePriorityModifier( const int resource, const bool isMine ) const;
         double getFundsValueBasedOnPriority( const Funds & funds ) const;
 
@@ -210,11 +219,6 @@ namespace AI
 
         bool purchaseNewHeroes( const std::vector<AICastle> & sortedCastleList, const std::set<int> & castlesInDanger, const int32_t availableHeroCount,
                                 const bool moreTasksForHeroes );
-
-        static bool isMonsterStrengthCacheable( const MP2::MapObjectType objectType )
-        {
-            return objectType == MP2::OBJ_MONSTER;
-        }
 
         void updateMapActionObjectCache( const int mapIndex );
 
@@ -228,7 +232,7 @@ namespace AI
         bool updateIndividualPriorityForCastle( const Castle & castle, const EnemyArmy & enemyArmy );
 
         void removePriorityAttackTarget( const int32_t tileIndex );
-        void updatePriorityAttackTarget( const Kingdom & kingdom, const Maps::Tiles & tile );
+        void updatePriorityAttackTarget( const Kingdom & kingdom, const Maps::Tile & tile );
 
         bool isPriorityTask( const int32_t index ) const
         {
@@ -246,15 +250,20 @@ namespace AI
         }
 
         // The following member variables should not be saved or serialized
-        std::vector<IndexObject> _mapActionObjects;
-        std::map<int32_t, PriorityTask> _priorityTargets;
-        std::map<int32_t, EnemyArmy> _enemyArmies;
-        std::vector<RegionStats> _regions;
-        std::array<BudgetEntry, 7> _budget = { Resource::WOOD, Resource::MERCURY, Resource::ORE, Resource::SULFUR, Resource::CRYSTAL, Resource::GEMS, Resource::GOLD };
-        AIWorldPathfinder _pathfinder;
 
-        // Monster strength is constant over the same turn for AI but its calculation is a heavy operation.
-        // In order to avoid extra computations during AI turn it is important to keep cache of monster strength but update it when an action on a monster is taken.
-        std::map<int32_t, double> _neutralMonsterStrengthCache;
+        std::unordered_map<int32_t, MP2::MapObjectType> _mapActionObjects;
+        std::unordered_map<int32_t, PriorityTask> _priorityTargets;
+        std::unordered_map<int32_t, EnemyArmy> _enemyArmies;
+
+        // Strength of the armies guarding the tiles (neutral monsters, guardians of dwellings, and so on) is constant for AI
+        // during the same turn, but its calculation is a heavy operation, so it needs to be cached to speed up estimations.
+        // It is important to update this cache after performing an action on the corresponding tile.
+        std::unordered_map<int32_t, double> _tileArmyStrengthValues;
+
+        std::vector<RegionStats> _regions;
+
+        std::array<BudgetEntry, 7> _budget = { Resource::WOOD, Resource::MERCURY, Resource::ORE, Resource::SULFUR, Resource::CRYSTAL, Resource::GEMS, Resource::GOLD };
+
+        AIWorldPathfinder _pathfinder;
     };
 }

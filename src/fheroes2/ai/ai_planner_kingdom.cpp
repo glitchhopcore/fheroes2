@@ -22,22 +22,20 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
-#include <map>
-#include <memory>
 #include <optional>
 #include <ostream>
 #include <set>
 #include <string>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
 #include "ai_common.h"
 #include "ai_hero_action.h"
-#include "ai_planner.h"
+#include "ai_planner.h" // IWYU pragma: associated
 #include "ai_planner_internals.h"
 #include "army.h"
-#include "army_troop.h"
 #include "audio.h"
 #include "audio_manager.h"
 #include "castle.h"
@@ -55,7 +53,6 @@
 #include "maps_tiles.h"
 #include "mp2.h"
 #include "mus.h"
-#include "pairs.h"
 #include "players.h"
 #include "resource.h"
 #include "skill.h"
@@ -95,7 +92,7 @@ namespace
             for ( Heroes * hero : heroes ) {
                 assert( hero != nullptr && hero->isActive() );
 
-                Maps::Tiles & tile = world.GetTiles( hero->GetIndex() );
+                Maps::Tile & tile = world.getTile( hero->GetIndex() );
                 if ( tile.getHero() == nullptr ) {
                     // This could happen when a hero is moving.
                     continue;
@@ -111,7 +108,7 @@ namespace
         ~TemporaryHeroEraser()
         {
             for ( Heroes * hero : _heroes ) {
-                Maps::Tiles & tile = world.GetTiles( hero->GetIndex() );
+                Maps::Tile & tile = world.getTile( hero->GetIndex() );
                 assert( tile.getHero() == nullptr );
 
                 tile.setHero( hero );
@@ -214,9 +211,9 @@ namespace
         }
     }
 
-    std::optional<AI::EnemyArmy> getEnemyArmyOnTile( const int kingdomColor, const Maps::Tiles & tile )
+    std::optional<AI::EnemyArmy> getEnemyArmyOnTile( const int kingdomColor, const Maps::Tile & tile )
     {
-        const MP2::MapObjectType object = tile.GetObject();
+        const MP2::MapObjectType object = tile.getMainObjectType();
         const int32_t tileIndex = tile.GetIndex();
 
         if ( object == MP2::OBJ_HERO ) {
@@ -239,7 +236,7 @@ namespace
             // Rough estimate - if the hero is in the castle, then we sum up the power of the castle garrison with the power of the hero's army
             const double threat = castle ? castle->GetArmy().GetStrength() + hero->GetArmy().GetStrength() : hero->GetArmy().GetStrength();
 
-            return AI::EnemyArmy( tileIndex, hero->GetColor(), hero, threat, hero->GetMaxMovePoints() );
+            return AI::EnemyArmy( tileIndex, hero, threat, hero->GetMaxMovePoints() );
         }
 
         if ( object == MP2::OBJ_CASTLE ) {
@@ -262,7 +259,7 @@ namespace
             const double threat = castle->GetArmy().GetStrength();
 
             // 1500 is slightly more than a fresh hero's maximum move points hired in a castle.
-            return AI::EnemyArmy( tileIndex, castle->GetColor(), nullptr, threat, 1500 );
+            return AI::EnemyArmy( tileIndex, nullptr, threat, 1500 );
         }
 
         return {};
@@ -310,100 +307,13 @@ bool AI::Planner::recruitHero( Castle & castle, bool buyArmy )
     }
 
     if ( buyArmy ) {
-        reinforceHeroInCastle( *recruit, castle, kingdom.GetFunds() );
+        reinforceCastle( castle );
     }
     else {
         OptimizeTroopsOrder( recruit->GetArmy() );
     }
 
     return true;
-}
-
-void AI::Planner::reinforceHeroInCastle( Heroes & hero, Castle & castle, const Funds & budget )
-{
-    // It is impossible to reinforce dead heroes.
-    assert( hero.isActive() );
-
-    const Heroes::AIHeroMeetingUpdater heroMeetingUpdater( hero );
-
-    if ( !hero.HaveSpellBook() && castle.GetLevelMageGuild() > 0 && !hero.IsFullBagArtifacts() ) {
-        // this call will check if AI kingdom have enough resources to buy book
-        hero.BuySpellBook( &castle );
-    }
-
-    Army & heroArmy = hero.GetArmy();
-    Army & garrison = castle.GetArmy();
-
-    // Merge all troops in the castle to have the best army.
-    heroArmy.JoinStrongestFromArmy( garrison );
-
-    // Upgrade troops and try to merge them again.
-    heroArmy.UpgradeTroops( castle );
-    garrison.UpgradeTroops( castle );
-    heroArmy.JoinStrongestFromArmy( garrison );
-
-    // Recruit more troops and also merge them.
-    castle.recruitBestAvailable( budget );
-    heroArmy.JoinStrongestFromArmy( garrison );
-
-    const uint32_t regionID = world.GetTiles( castle.GetIndex() ).GetRegion();
-
-    // Check if we should leave some troops in the garrison
-    // TODO: amount of troops left could depend on region's safetyFactor
-    if ( castle.isCastle() && _regions[regionID].safetyFactor <= 100 && !garrison.isValid() ) {
-        auto [troopForTransferToGarrison, transferHalf] = [&hero, &heroArmy]() -> std::pair<Troop *, bool> {
-            const Heroes::Role heroRole = hero.getAIRole();
-            const bool isFighterRole = ( heroRole == Heroes::Role::FIGHTER || heroRole == Heroes::Role::CHAMPION );
-
-            // We need to compare a strength of troops excluding hero's stats.
-            const double troopsStrength = Troops( heroArmy.getTroops() ).GetStrength();
-            const double significanceRatio = isFighterRole ? 20.0 : 10.0;
-
-            {
-                Troop * candidateTroop = heroArmy.GetSlowestTroop();
-                assert( candidateTroop != nullptr );
-
-                if ( candidateTroop->GetStrength() <= troopsStrength / significanceRatio ) {
-                    return { candidateTroop, false };
-                }
-            }
-
-            // if this is an important hero, then all his troops are significant
-            if ( isFighterRole ) {
-                return {};
-            }
-
-            {
-                Troop * candidateTroop = heroArmy.GetWeakestTroop();
-                assert( candidateTroop != nullptr );
-
-                if ( candidateTroop->GetStrength() <= troopsStrength / significanceRatio ) {
-                    return { candidateTroop, true };
-                }
-            }
-
-            return {};
-        }();
-
-        if ( troopForTransferToGarrison ) {
-            assert( heroArmy.GetOccupiedSlotCount() > 1 );
-
-            const uint32_t initialCount = troopForTransferToGarrison->GetCount();
-            const uint32_t countToTransfer = transferHalf ? initialCount / 2 : initialCount;
-
-            if ( garrison.JoinTroop( troopForTransferToGarrison->GetMonster(), countToTransfer, true ) ) {
-                if ( countToTransfer == initialCount ) {
-                    troopForTransferToGarrison->Reset();
-                }
-                else {
-                    troopForTransferToGarrison->SetCount( initialCount - countToTransfer );
-                }
-            }
-        }
-    }
-
-    OptimizeTroopsOrder( heroArmy );
-    OptimizeTroopsOrder( garrison );
 }
 
 void AI::Planner::evaluateRegionSafety()
@@ -488,7 +398,7 @@ std::vector<AI::AICastle> AI::Planner::getSortedCastleList( const VecCastles & c
         }
 
         const int32_t castleIndex = castle->GetIndex();
-        const uint32_t regionID = world.GetTiles( castleIndex ).GetRegion();
+        const uint32_t regionID = world.getTile( castleIndex ).GetRegion();
 
         sortedCastleList.emplace_back( castle, castlesInDanger.count( castleIndex ) > 0, _regions[regionID].safetyFactor, castle->getBuildingValue() );
     }
@@ -597,7 +507,13 @@ bool AI::Planner::updateIndividualPriorityForCastle( const Castle & castle, cons
         return false;
     }
 
-    const uint32_t dist = _pathfinder.getDistance( enemyArmy.index, castleIndex, enemyArmy.color, enemyArmy.strength );
+    // When estimating the distance using the pathfinder, it should be taken into account that although the enemy army may be close to the castle, the castle
+    // may still be invisible to the enemy army due to the fog of war, therefore, it is necessary to use an assessment of the path from the castle owner's point
+    // of view, who obviously sees both the castle and the enemy army at the same time.
+    //
+    // Of course, on the other hand, it may be the other way around - the enemy army may have access to some path that is not yet visible to the castle owner,
+    // but since the castle owner doesn't know about this for sure, using this option smacks of cheating.
+    const uint32_t dist = _pathfinder.getDistance( enemyArmy.index, castleIndex, castle.GetColor(), enemyArmy.strength );
     if ( dist == 0 || dist >= threatDistanceLimit ) {
         return false;
     }
@@ -608,6 +524,8 @@ bool AI::Planner::updateIndividualPriorityForCastle( const Castle & castle, cons
         return false;
     }
 
+    DEBUG_LOG( DBG_AI, DBG_TRACE, castle.GetName() << " is threatened by enemy army at " << enemyArmy.index )
+
     double enemyStrength = enemyArmy.strength;
 
     --daysToReach;
@@ -617,20 +535,12 @@ bool AI::Planner::updateIndividualPriorityForCastle( const Castle & castle, cons
         --daysToReach;
     }
 
-    auto attackTask = _priorityTargets.find( enemyArmy.index );
-    if ( attackTask == _priorityTargets.end() ) {
-        _priorityTargets[enemyArmy.index] = { PriorityTaskType::ATTACK, castleIndex };
-    }
-    else {
-        attackTask->second.secondaryTaskTileId.insert( castleIndex );
+    if ( const auto [iter, inserted] = _priorityTargets.try_emplace( enemyArmy.index, PriorityTaskType::ATTACK, castleIndex ); !inserted ) {
+        iter->second.secondaryTaskTileId.insert( castleIndex );
     }
 
-    auto defenseTask = _priorityTargets.find( castleIndex );
-    if ( defenseTask == _priorityTargets.end() ) {
-        _priorityTargets[castleIndex] = { PriorityTaskType::DEFEND, enemyArmy.index };
-    }
-    else {
-        defenseTask->second.secondaryTaskTileId.insert( enemyArmy.index );
+    if ( const auto [iter, inserted] = _priorityTargets.try_emplace( castleIndex, PriorityTaskType::DEFEND, enemyArmy.index ); !inserted ) {
+        iter->second.secondaryTaskTileId.insert( enemyArmy.index );
     }
 
     // If the castle guard (including the garrison and the guest hero) is weaker than the enemy, then the
@@ -686,18 +596,24 @@ void AI::Planner::removePriorityAttackTarget( const int32_t tileIndex )
     _priorityTargets.erase( tileIndex );
 }
 
-void AI::Planner::updatePriorityAttackTarget( const Kingdom & kingdom, const Maps::Tiles & tile )
+void AI::Planner::updatePriorityAttackTarget( const Kingdom & kingdom, const Maps::Tile & tile )
 {
     const int32_t tileIndex = tile.GetIndex();
 
-    _enemyArmies.erase( tileIndex );
-
     const auto enemyArmy = getEnemyArmyOnTile( kingdom.GetColor(), tile );
-    if ( enemyArmy ) {
-        _enemyArmies[enemyArmy->index] = *enemyArmy;
+    if ( !enemyArmy ) {
+        _enemyArmies.erase( tileIndex );
 
-        updatePriorityForEnemyArmy( kingdom, *enemyArmy );
+        return;
     }
+
+    assert( enemyArmy->index == tileIndex );
+
+    if ( const auto [iter, inserted] = _enemyArmies.try_emplace( tileIndex, *enemyArmy ); !inserted ) {
+        iter->second = *enemyArmy;
+    }
+
+    updatePriorityForEnemyArmy( kingdom, *enemyArmy );
 }
 
 void AI::Planner::KingdomTurn( Kingdom & kingdom )
@@ -731,6 +647,16 @@ void AI::Planner::KingdomTurn( Kingdom & kingdom )
     const AIAutoControlModeCommitter aiAutoControlModeCommitter( kingdom );
 #endif
 
+    _mapActionObjects.clear();
+    _priorityTargets.clear();
+    _enemyArmies.clear();
+
+    // Clear the tile army strength cache because the strength of the respective armies might have changed since last time
+    _tileArmyStrengthValues.clear();
+
+    _regions.clear();
+    _regions.resize( world.getRegionCount() );
+
     const int myColor = kingdom.GetColor();
 
     if ( kingdom.isLoss() || myColor == Color::NONE ) {
@@ -739,16 +665,13 @@ void AI::Planner::KingdomTurn( Kingdom & kingdom )
     }
 
     // Reset the turn progress indicator
-    Interface::StatusWindow & status = Interface::AdventureMap::Get().getStatusWindow();
-    status.DrawAITurnProgress( 0 );
+    Interface::StatusPanel & status = Interface::AdventureMap::Get().getStatusPanel();
+    status.drawAITurnProgress( 0 );
 
     AudioManager::PlayMusicAsync( MUS::COMPUTER_TURN, Music::PlaybackMode::RESUME_AND_PLAY_INFINITE );
 
     VecHeroes & heroes = kingdom.GetHeroes();
     const VecCastles & castles = kingdom.GetCastles();
-
-    // Clear the cache of neutral monsters as their strength might have changed.
-    _neutralMonsterStrengthCache.clear();
 
     DEBUG_LOG( DBG_AI, DBG_INFO, Color::String( myColor ) << " starts the turn: " << castles.size() << " castles, " << heroes.size() << " heroes" )
     DEBUG_LOG( DBG_AI, DBG_INFO, "Funds: " << kingdom.GetFunds().String() )
@@ -775,17 +698,11 @@ void AI::Planner::KingdomTurn( Kingdom & kingdom )
         underViewSpell = true;
     }
 
-    _priorityTargets.clear();
-    _enemyArmies.clear();
-    _mapActionObjects.clear();
-    _regions.clear();
-    _regions.resize( world.getRegionCount() );
-
     const int mapSize = world.w() * world.h();
 
     for ( int idx = 0; idx < mapSize; ++idx ) {
-        const Maps::Tiles & tile = world.GetTiles( idx );
-        MP2::MapObjectType objectType = tile.GetObject();
+        const Maps::Tile & tile = world.getTile( idx );
+        MP2::MapObjectType objectType = tile.getMainObjectType();
 
         const uint32_t regionID = tile.GetRegion();
         if ( regionID >= _regions.size() ) {
@@ -802,7 +719,9 @@ void AI::Planner::KingdomTurn( Kingdom & kingdom )
             continue;
         }
 
-        _mapActionObjects.emplace_back( idx, objectType );
+        if ( const auto [dummy, inserted] = _mapActionObjects.try_emplace( idx, objectType ); !inserted ) {
+            assert( 0 );
+        }
 
         if ( objectType == MP2::OBJ_HERO ) {
             const Heroes * hero = tile.getHero();
@@ -818,7 +737,7 @@ void AI::Planner::KingdomTurn( Kingdom & kingdom )
             }
 
             // This hero can be in a castle
-            objectType = tile.GetObject( false );
+            objectType = tile.getMainObjectType( false );
         }
 
         if ( objectType == MP2::OBJ_CASTLE ) {
@@ -835,7 +754,11 @@ void AI::Planner::KingdomTurn( Kingdom & kingdom )
 
         const auto enemyArmy = getEnemyArmyOnTile( myColor, tile );
         if ( enemyArmy ) {
-            _enemyArmies[enemyArmy->index] = *enemyArmy;
+            assert( enemyArmy->index == idx );
+
+            if ( const auto [dummy, inserted] = _enemyArmies.try_emplace( idx, *enemyArmy ); !inserted ) {
+                assert( 0 );
+            }
 
             if ( stats.highestThreat < enemyArmy->strength ) {
                 stats.highestThreat = enemyArmy->strength;
@@ -843,17 +766,18 @@ void AI::Planner::KingdomTurn( Kingdom & kingdom )
         }
     }
 
+    DEBUG_LOG( DBG_AI, DBG_TRACE, Color::String( myColor ) << " found " << _mapActionObjects.size() << " valid objects" )
+
     evaluateRegionSafety();
 
     updateKingdomBudget( kingdom );
 
-    DEBUG_LOG( DBG_AI, DBG_TRACE, Color::String( myColor ) << " found " << _mapActionObjects.size() << " valid objects" )
-
     uint32_t progressStatus = 1;
-    status.DrawAITurnProgress( progressStatus );
+    status.drawAITurnProgress( progressStatus );
 
-    std::vector<AICastle> sortedCastleList;
     std::set<int> castlesInDanger;
+    std::vector<AICastle> sortedCastleList;
+
     while ( true ) {
         // Step 2. Do some hero stuff.
         // If a hero is standing in a castle most likely he has nothing to do so let's try to give him more army.
@@ -877,21 +801,21 @@ void AI::Planner::KingdomTurn( Kingdom & kingdom )
 
         sortedCastleList = getSortedCastleList( castles, castlesInDanger );
 
-        const uint32_t startProgressValue = progressStatus;
-        const uint32_t endProgressValue = ( progressStatus == 1 ) ? 8 : std::max( progressStatus + 1U, 9U );
+        // If AI has less than three heroes at the start of the turn we assume
+        // that he will buy another one in this turn and allow progress to increase only for 2 points.
+        uint32_t const endProgressValue
+            = ( progressStatus == 1 ) ? std::min( static_cast<uint32_t>( heroes.size() ) * 2U + 1U, 8U ) : std::min( progressStatus + 2U, 9U );
 
-        bool moreTaskForHeroes = HeroesTurn( heroes, startProgressValue, endProgressValue );
-
-        if ( progressStatus == 1 ) {
-            progressStatus = 8;
-            status.DrawAITurnProgress( progressStatus );
-        }
+        bool moreTaskForHeroes = HeroesTurn( heroes, progressStatus, endProgressValue );
 
         // Step 4. Buy new heroes, adjust roles, sort heroes based on priority or strength
         if ( purchaseNewHeroes( sortedCastleList, castlesInDanger, availableHeroCount, moreTaskForHeroes ) ) {
             assert( !heroes.empty() && heroes.back() != nullptr );
+
             updateMapActionObjectCache( heroes.back()->GetIndex() );
+
             ++availableHeroCount;
+
             continue;
         }
 
@@ -902,8 +826,7 @@ void AI::Planner::KingdomTurn( Kingdom & kingdom )
                 assert( castle != nullptr );
 
                 if ( castle->GetHero() == nullptr ) {
-                    const auto [dummy, inserted] = _priorityTargets.try_emplace( castle->GetIndex(), PriorityTaskType::REINFORCE );
-                    if ( inserted ) {
+                    if ( const auto [dummy, inserted] = _priorityTargets.try_emplace( castle->GetIndex(), PriorityTaskType::REINFORCE ); inserted ) {
                         DEBUG_LOG( DBG_AI, DBG_INFO, castle->GetName() << " is designated as a priority target to reinforce nearby heroes" )
 
                         moreTaskForHeroes = true;
@@ -919,7 +842,7 @@ void AI::Planner::KingdomTurn( Kingdom & kingdom )
         break;
     }
 
-    status.DrawAITurnProgress( 9 );
+    status.drawAITurnProgress( 9 );
 
     // Sync the list of castles (if new ones were captured during the turn)
     if ( castles.size() != sortedCastleList.size() ) {
@@ -946,7 +869,7 @@ void AI::Planner::KingdomTurn( Kingdom & kingdom )
         transferSlowestTroopsToGarrison( hero, castle );
     }
 
-    status.DrawAITurnProgress( 10 );
+    status.resetAITurnProgress();
 }
 
 bool AI::Planner::purchaseNewHeroes( const std::vector<AICastle> & sortedCastleList, const std::set<int> & castlesInDanger, const int32_t availableHeroCount,
@@ -973,7 +896,7 @@ bool AI::Planner::purchaseNewHeroes( const std::vector<AICastle> & sortedCastleL
             if ( hero != nullptr || ( availableHeroCount > 0 && castlesInDanger.find( mapIndex ) != castlesInDanger.end() ) )
                 continue;
 
-            const uint32_t regionID = world.GetTiles( mapIndex ).GetRegion();
+            const uint32_t regionID = world.getTile( mapIndex ).GetRegion();
             const int heroesInRegion = _regions[regionID].friendlyHeroes;
 
             if ( heroesInRegion > 1 )

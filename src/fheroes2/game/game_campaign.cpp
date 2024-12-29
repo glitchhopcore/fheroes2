@@ -24,7 +24,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <map>
-#include <memory>
 #include <optional>
 #include <ostream>
 #include <string>
@@ -44,7 +43,7 @@
 #include "color.h"
 #include "cursor.h"
 #include "dialog.h"
-#include "game.h"
+#include "game.h" // IWYU pragma: associated
 #include "game_credits.h"
 #include "game_hotkeys.h"
 #include "game_io.h"
@@ -1030,7 +1029,7 @@ namespace
 
         LocalEvent & le = LocalEvent::Get();
         while ( le.HandleEvents() ) {
-            le.isMouseLeftButtonPressedInArea( buttonOk.area() ) ? buttonOk.drawOnPress() : buttonOk.drawOnRelease();
+            buttonOk.drawOnState( le.isMouseLeftButtonPressedInArea( buttonOk.area() ) );
 
             if ( le.MouseClickLeft( buttonOk.area() ) || Game::HotKeyCloseWindow() ) {
                 break;
@@ -1505,11 +1504,11 @@ fheroes2::GameMode Game::SelectCampaignScenario( const fheroes2::GameMode prevMo
     bool updateDisplay = false;
 
     while ( le.HandleEvents() ) {
-        le.isMouseLeftButtonPressedInArea( buttonCancel.area() ) ? buttonCancel.drawOnPress() : buttonCancel.drawOnRelease();
-        le.isMouseLeftButtonPressedInArea( buttonOk.area() ) ? buttonOk.drawOnPress() : buttonOk.drawOnRelease();
-        le.isMouseLeftButtonPressedInArea( buttonViewIntro.area() ) ? buttonViewIntro.drawOnPress() : buttonViewIntro.drawOnRelease();
-        le.isMouseLeftButtonPressedInArea( buttonDifficulty.area() ) ? buttonDifficulty.drawOnPress() : buttonDifficulty.drawOnRelease();
-        le.isMouseLeftButtonPressedInArea( buttonRestart.area() ) ? buttonRestart.drawOnPress() : buttonRestart.drawOnRelease();
+        buttonCancel.drawOnState( le.isMouseLeftButtonPressedInArea( buttonCancel.area() ) );
+        buttonOk.drawOnState( le.isMouseLeftButtonPressedInArea( buttonOk.area() ) );
+        buttonViewIntro.drawOnState( le.isMouseLeftButtonPressedInArea( buttonViewIntro.area() ) );
+        buttonDifficulty.drawOnState( le.isMouseLeftButtonPressedInArea( buttonDifficulty.area() ) );
+        buttonRestart.drawOnState( le.isMouseLeftButtonPressedInArea( buttonRestart.area() ) );
 
         for ( uint32_t i = 0; i < bonusChoiceCount; ++i ) {
             if ( le.isMouseLeftButtonPressedInArea( choiceArea[i] ) || ( i < hotKeyBonusChoice.size() && HotKeyPressEvent( hotKeyBonusChoice[i] ) ) ) {
@@ -1592,7 +1591,7 @@ fheroes2::GameMode Game::SelectCampaignScenario( const fheroes2::GameMode prevMo
             Maps::FileInfo mapInfo = scenario.loadMap();
             Campaign::CampaignData::updateScenarioGameplayConditions( currentScenarioInfoId, mapInfo );
 
-            conf.SetCurrentFileInfo( mapInfo );
+            conf.setCurrentMapInfo( mapInfo );
 
             assert( !scenarioBonusId || ( scenarioBonusId >= 0 && static_cast<size_t>( *scenarioBonusId ) < bonusChoices.size() ) );
 
@@ -1634,7 +1633,7 @@ fheroes2::GameMode Game::SelectCampaignScenario( const fheroes2::GameMode prevMo
                                                    Dialog::OK );
 
                 // TODO: find a way to restore world for the current game after a failure.
-                conf.SetCurrentFileInfo( {} );
+                conf.setCurrentMapInfo( {} );
                 continue;
             }
 

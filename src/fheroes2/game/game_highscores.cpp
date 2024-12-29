@@ -26,7 +26,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
-#include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -36,7 +36,7 @@
 #include "campaign_scenariodata.h"
 #include "cursor.h"
 #include "dialog.h"
-#include "game.h"
+#include "game.h" // IWYU pragma: associated
 #include "game_delays.h"
 #include "game_hotkeys.h"
 #include "game_io.h"
@@ -65,6 +65,11 @@
 #ifdef WITH_DEBUG
 #include "logging.h"
 #endif
+
+namespace fheroes2
+{
+    enum class SupportedLanguage : uint8_t;
+}
 
 namespace
 {
@@ -201,12 +206,15 @@ namespace
         for ( const fheroes2::HighscoreData & data : highScores ) {
             const fheroes2::FontType font = ( scoreIndex == selectedScoreIndex ) ? fheroes2::FontType::normalYellow() : fheroes2::FontType::normalWhite();
 
-            const fheroes2::LanguageSwitcher languageSwitcher( fheroes2::getLanguageFromAbbreviation( data.languageAbbreviation ) );
+            // TODO: scenario name can have its own independent language.
+            const fheroes2::SupportedLanguage language = fheroes2::getLanguageFromAbbreviation( data.languageAbbreviation );
 
-            text.set( data.playerName, font );
+            text.set( data.playerName, font, language );
+            text.fitToOneRow( scenarioNameOffset - playerNameOffset );
             text.draw( position.x + playerNameOffset, offsetY + initialHighScoreEntryOffsetY, display );
 
-            text.set( data.scenarioName, font );
+            text.set( data.scenarioName, font, language );
+            text.fitToOneRow( dayCountOffset - scenarioNameOffset );
             text.draw( position.x + scenarioNameOffset, offsetY + initialHighScoreEntryOffsetY, display );
 
             text.set( std::to_string( data.dayCount ), font );
@@ -266,7 +274,7 @@ fheroes2::GameMode Game::DisplayHighScores( const bool isCampaign )
 
     if ( isAfterGameCompletion ) {
         const auto inputPlayerName = []( std::string & playerName ) {
-            Dialog::inputString( _( "Your Name" ), playerName, {}, 15, false, false );
+            Dialog::inputString( fheroes2::Text{}, fheroes2::Text{ _( "Your Name" ), fheroes2::FontType::normalWhite() }, playerName, 15, false, {} );
             if ( playerName.empty() ) {
                 playerName = _( "Unknown Hero" );
             }
@@ -372,8 +380,8 @@ fheroes2::GameMode Game::DisplayHighScores( const bool isCampaign )
 
     LocalEvent & le = LocalEvent::Get();
     while ( le.HandleEvents( Game::isDelayNeeded( { Game::MAPS_DELAY } ) ) ) {
-        le.isMouseLeftButtonPressedInArea( buttonOtherHighScore.area() ) ? buttonOtherHighScore.drawOnPress() : buttonOtherHighScore.drawOnRelease();
-        le.isMouseLeftButtonPressedInArea( buttonExit.area() ) ? buttonExit.drawOnPress() : buttonExit.drawOnRelease();
+        buttonOtherHighScore.drawOnState( le.isMouseLeftButtonPressedInArea( buttonOtherHighScore.area() ) );
+        buttonExit.drawOnState( le.isMouseLeftButtonPressedInArea( buttonExit.area() ) );
 
         if ( le.MouseClickLeft( buttonExit.area() ) || HotKeyCloseWindow() ) {
             if ( isAfterGameCompletion || isDefaultScreenSize ) {

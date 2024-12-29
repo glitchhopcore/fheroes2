@@ -25,7 +25,6 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
-#include <memory>
 #include <ostream>
 #include <set>
 #include <string>
@@ -36,7 +35,7 @@
 #include "army.h"
 #include "army_troop.h"
 #include "artifact.h"
-#include "battle.h"
+#include "battle.h" // IWYU pragma: associated
 #include "battle_arena.h"
 #include "battle_army.h"
 #include "campaign_savedata.h"
@@ -186,17 +185,17 @@ namespace
             switch ( eagleeye.Level() ) {
             case Skill::Level::BASIC:
                 // 20%
-                if ( 3 > sp.Level() && eagleeye.GetValues() >= randomGenerator.Get( 1, 100 ) )
+                if ( 3 > sp.Level() && eagleeye.GetValue() >= randomGenerator.Get( 1, 100 ) )
                     new_spells.push_back( sp );
                 break;
             case Skill::Level::ADVANCED:
                 // 30%
-                if ( 4 > sp.Level() && eagleeye.GetValues() >= randomGenerator.Get( 1, 100 ) )
+                if ( 4 > sp.Level() && eagleeye.GetValue() >= randomGenerator.Get( 1, 100 ) )
                     new_spells.push_back( sp );
                 break;
             case Skill::Level::EXPERT:
                 // 40%
-                if ( 5 > sp.Level() && eagleeye.GetValues() >= randomGenerator.Get( 1, 100 ) )
+                if ( 5 > sp.Level() && eagleeye.GetValue() >= randomGenerator.Get( 1, 100 ) )
                     new_spells.push_back( sp );
                 break;
             default:
@@ -454,7 +453,7 @@ Battle::Result Battle::Loader( Army & army1, Army & army2, int32_t mapsindex )
         }
 
         if ( winnerHero && loserHero && winnerHero->GetLevelSkill( Skill::Secondary::EAGLE_EYE ) && loserHero->isHeroes() ) {
-            eagleEyeSkillAction( *winnerHero, arena.GetUsageSpells(), winnerHero->isControlHuman(), randomGenerator );
+            eagleEyeSkillAction( *winnerHero, arena.GetUsedSpells(), winnerHero->isControlHuman(), randomGenerator );
         }
 
         if ( winnerHero && winnerHero->GetLevelSkill( Skill::Secondary::NECROMANCY ) ) {
